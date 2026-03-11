@@ -102,7 +102,7 @@ class PomodoroSession(SQLModel, table=True):
     is_running: bool
     last_updated_at: datetime
 
-sqlite_file_name = "database.db"
+sqlite_file_name = "db.sqlite3"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
