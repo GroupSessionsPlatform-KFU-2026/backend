@@ -1,11 +1,13 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from .models import create_db_and_tables
 
-app = FastAPI()
-
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan = lifespan)
 
 @app.get('/')
 def read_root():
