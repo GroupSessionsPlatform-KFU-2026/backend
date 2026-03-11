@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Group Sessions Platform API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Initial OpenAPI specification for the Group Sessions Platform MVP.
     This specification is based on the ER diagram and covers the main
@@ -75,12 +75,28 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: email
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /auth/login:
     post:
       tags: [auth]
-      summary: Log in user
+      summary: Obtain access token
       operationId: loginUser
       requestBody:
         required: true
@@ -105,6 +121,28 @@ paths:
                 error: INVALID_CREDENTIALS
                 message: Invalid email or password
                 details: null
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: password
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /users/me:
     get:
@@ -112,7 +150,8 @@ paths:
       summary: Get current authenticated user
       operationId: getCurrentUser
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - users:read
       responses:
         '200':
           description: Current authenticated user profile
@@ -126,6 +165,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /users/{user_id}:
     get:
@@ -133,7 +186,8 @@ paths:
       summary: Get user by id
       operationId: getUserById
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - users:read
       parameters:
         - $ref: '#/components/parameters/UserIdParam'
       responses:
@@ -143,6 +197,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: User not found
           content:
@@ -153,6 +217,16 @@ paths:
                 error: USER_NOT_FOUND
                 message: User with this id does not exist
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /projects:
     get:
@@ -160,7 +234,8 @@ paths:
       summary: Get project list
       operationId: getProjects
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:read
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -197,12 +272,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [projects]
       summary: Create a new project
       operationId: createProject
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:write
       requestBody:
         required: true
         content:
@@ -216,12 +313,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '422':
           description: Validation error
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: title
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /projects/{project_id}:
     get:
@@ -229,7 +352,8 @@ paths:
       summary: Get project by id
       operationId: getProjectById
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:read
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
       responses:
@@ -239,6 +363,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Project not found
           content:
@@ -249,12 +383,24 @@ paths:
                 error: PROJECT_NOT_FOUND
                 message: Project with this id does not exist
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     put:
       tags: [projects]
       summary: Update project
       operationId: updateProject
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:write
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
       requestBody:
@@ -270,6 +416,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only project owner can update project
           content:
@@ -286,17 +442,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: title
+                    message: must be a string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     delete:
       tags: [projects]
       summary: Archive project
       operationId: archiveProject
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:write
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
       responses:
         '204':
           description: Project archived successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only project owner can archive project
           content:
@@ -309,6 +499,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /projects/{project_id}/tags:
     get:
@@ -316,7 +516,8 @@ paths:
       summary: Get tags assigned to a project
       operationId: getProjectTags
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:read
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
       responses:
@@ -328,18 +529,40 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TagResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Project not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [projects]
       summary: Assign tag to project
       operationId: assignTagToProject
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:write
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
       requestBody:
@@ -355,6 +578,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectTagResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Project or tag not found
           content:
@@ -371,6 +604,28 @@ paths:
                 error: PROJECT_TAG_ALREADY_EXISTS
                 message: This tag is already assigned to the project
                 details: null
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: tag_id
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /projects/{project_id}/tags/{tag_id}:
     delete:
@@ -378,19 +633,40 @@ paths:
       summary: Remove tag from project
       operationId: removeTagFromProject
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - projects:write
       parameters:
         - $ref: '#/components/parameters/ProjectIdParam'
         - $ref: '#/components/parameters/TagIdParam'
       responses:
         '204':
           description: Tag removed from project
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Project, tag or relation not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /tags:
     get:
@@ -398,7 +674,8 @@ paths:
       summary: Get tag list
       operationId: getTags
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - tags:read
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -414,12 +691,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TagListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [tags]
       summary: Create a new tag
       operationId: createTag
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - tags:write
       requestBody:
         required: true
         content:
@@ -433,6 +732,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TagResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '409':
           description: Tag name already exists
           content:
@@ -443,6 +752,28 @@ paths:
                 error: TAG_ALREADY_EXISTS
                 message: Tag with this name already exists
                 details: null
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: name
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /tags/{tag_id}:
     get:
@@ -450,7 +781,8 @@ paths:
       summary: Get tag by id
       operationId: getTagById
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - tags:read
       parameters:
         - $ref: '#/components/parameters/TagIdParam'
       responses:
@@ -460,12 +792,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TagResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Tag not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms:
     get:
@@ -473,7 +825,8 @@ paths:
       summary: Get room list
       operationId: getRooms
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - rooms:read
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -511,12 +864,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [rooms]
       summary: Create room
       operationId: createRoom
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - rooms:write
       requestBody:
         required: true
         content:
@@ -530,12 +905,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Related project not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: max_participants
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/join:
     post:
@@ -543,7 +950,8 @@ paths:
       summary: Join room by room code
       operationId: joinRoom
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - rooms:read
       requestBody:
         required: true
         content:
@@ -557,6 +965,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomParticipantResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room with this code not found
           content:
@@ -584,6 +1002,28 @@ paths:
                     error: ROOM_ALREADY_ENDED
                     message: Cannot join an ended room
                     details: null
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: room_code
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}:
     get:
@@ -591,7 +1031,8 @@ paths:
       summary: Get room by id
       operationId: getRoomById
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - rooms:read
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       responses:
@@ -601,6 +1042,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
@@ -611,12 +1062,24 @@ paths:
                 error: ROOM_NOT_FOUND
                 message: Room with this id does not exist
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     put:
       tags: [rooms]
       summary: Update room
       operationId: updateRoom
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - rooms:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       requestBody:
@@ -632,6 +1095,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator can update room
           content:
@@ -644,23 +1117,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /rooms/{room_id}/end:
-    post:
-      tags: [rooms]
-      summary: End room session
-      operationId: endRoom
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/RoomIdParam'
-      responses:
-        '200':
-          description: Room ended successfully
+        '422':
+          description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoomResponse'
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: max_participants
+                    message: must be greater than 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
+    delete:
+      tags: [rooms]
+      summary: End room session
+      operationId: deleteRoom
+      security:
+        - OAuth2PasswordBearer:
+            - rooms:write
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '204':
+          description: Room ended successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator can end room
           content:
@@ -683,6 +1184,16 @@ paths:
                 error: ROOM_ALREADY_ENDED
                 message: The room is already ended
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/participants:
     get:
@@ -690,7 +1201,8 @@ paths:
       summary: Get room participants
       operationId: getRoomParticipants
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - participants:read
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/PageParam'
@@ -713,12 +1225,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ParticipantListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/participants/{user_id}:
     patch:
@@ -726,7 +1258,8 @@ paths:
       summary: Update participant role or status
       operationId: updateParticipant
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - participants:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/UserIdParam'
@@ -743,6 +1276,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomParticipantResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can manage participants
           content:
@@ -755,18 +1298,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: role
+                    message: invalid role value
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     delete:
       tags: [participants]
       summary: Remove participant from room
       operationId: removeParticipant
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - participants:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/UserIdParam'
       responses:
         '204':
           description: Participant removed from room
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can remove participants
           content:
@@ -779,6 +1356,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/messages:
     get:
@@ -786,7 +1373,8 @@ paths:
       summary: Get room chat messages
       operationId: getRoomMessages
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - chat:read
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/PageParam'
@@ -815,18 +1403,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [chat]
       summary: Send message to room chat
       operationId: createMessage
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - chat:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       requestBody:
@@ -842,6 +1452,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatMessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
@@ -854,15 +1474,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: content
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
-  /messages/{message_id}:
+  /rooms/{room_id}/messages/{message_id}:
     put:
       tags: [chat]
       summary: Edit chat message
       operationId: updateMessage
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - chat:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/MessageIdParam'
       requestBody:
         required: true
@@ -877,6 +1521,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatMessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot edit another user's message
           content:
@@ -893,17 +1547,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: content
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     delete:
       tags: [chat]
       summary: Delete chat message
       operationId: deleteMessage
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - chat:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/MessageIdParam'
       responses:
         '204':
           description: Message deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot delete another user's message
           content:
@@ -916,6 +1605,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/board-elements:
     get:
@@ -923,7 +1622,8 @@ paths:
       summary: Get board elements
       operationId: getBoardElements
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:read
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/PageParam'
@@ -951,18 +1651,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardElementListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [board]
       summary: Create board element
       operationId: createBoardElement
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       requestBody:
@@ -978,6 +1700,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardElementResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Room not found
           content:
@@ -990,15 +1722,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: element_type
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
-  /board-elements/{element_id}:
+  /rooms/{room_id}/board-elements/{element_id}:
     get:
       tags: [board]
       summary: Get board element by id
       operationId: getBoardElementById
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:read
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/ElementIdParam'
       responses:
         '200':
@@ -1007,19 +1763,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardElementResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Board element not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     put:
       tags: [board]
       summary: Update board element
       operationId: updateBoardElement
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/ElementIdParam'
       requestBody:
         required: true
@@ -1034,6 +1813,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardElementResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot edit another user's element
           content:
@@ -1050,17 +1839,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: data
+                    message: invalid data structure
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     delete:
       tags: [board]
       summary: Delete board element
       operationId: deleteBoardElement
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/ElementIdParam'
       responses:
         '204':
           description: Board element deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot delete another user's element
           content:
@@ -1073,15 +1897,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
-  /board-elements/{element_id}/comments:
+  /rooms/{room_id}/board-elements/{element_id}/comments:
     get:
       tags: [board-comments]
       summary: Get comments for board element
       operationId: getBoardElementComments
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:read
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/ElementIdParam'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -1102,19 +1938,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardCommentListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Board element not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     post:
       tags: [board-comments]
       summary: Add comment to board element
       operationId: createBoardComment
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
         - $ref: '#/components/parameters/ElementIdParam'
       requestBody:
         required: true
@@ -1129,21 +1988,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardCommentResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Board element not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: content
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
-  /board-comments/{comment_id}:
+  /rooms/{room_id}/board-elements/{element_id}/comments/{comment_id}:
     put:
       tags: [board-comments]
       summary: Update board comment
       operationId: updateBoardComment
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/ElementIdParam'
         - $ref: '#/components/parameters/CommentIdParam'
       requestBody:
         required: true
@@ -1158,6 +2052,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoardCommentResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot edit another user's comment
           content:
@@ -1170,17 +2074,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: content
+                    message: field required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
+
     delete:
       tags: [board-comments]
       summary: Delete board comment
       operationId: deleteBoardComment
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - board:write
       parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/ElementIdParam'
         - $ref: '#/components/parameters/CommentIdParam'
       responses:
         '204':
           description: Comment deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: User cannot delete another user's comment
           content:
@@ -1193,6 +2133,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/pomodoro:
     get:
@@ -1200,7 +2150,8 @@ paths:
       summary: Get pomodoro state for room
       operationId: getPomodoro
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - pomodoro:read
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       responses:
@@ -1210,6 +2161,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PomodoroResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '404':
           description: Pomodoro session not found
           content:
@@ -1220,6 +2181,16 @@ paths:
                 error: POMODORO_NOT_FOUND
                 message: Pomodoro session for this room does not exist
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/pomodoro/settings:
     patch:
@@ -1227,7 +2198,8 @@ paths:
       summary: Update pomodoro settings
       operationId: updatePomodoroSettings
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - pomodoro:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       requestBody:
@@ -1243,6 +2215,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PomodoroResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can update pomodoro settings
           content:
@@ -1255,6 +2237,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                error: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - field: work_duration
+                    message: must be greater than 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/pomodoro/start:
     post:
@@ -1262,7 +2266,8 @@ paths:
       summary: Start pomodoro
       operationId: startPomodoro
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - pomodoro:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       responses:
@@ -1272,6 +2277,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PomodoroResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can start pomodoro
           content:
@@ -1294,6 +2309,16 @@ paths:
                 error: POMODORO_ALREADY_RUNNING
                 message: Pomodoro is already running
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/pomodoro/pause:
     post:
@@ -1301,7 +2326,8 @@ paths:
       summary: Pause pomodoro
       operationId: pausePomodoro
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - pomodoro:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       responses:
@@ -1311,6 +2337,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PomodoroResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can pause pomodoro
           content:
@@ -1333,6 +2369,16 @@ paths:
                 error: POMODORO_NOT_RUNNING
                 message: Pomodoro is not running
                 details: null
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
   /rooms/{room_id}/pomodoro/reset:
     post:
@@ -1340,7 +2386,8 @@ paths:
       summary: Reset pomodoro
       operationId: resetPomodoro
       security:
-        - bearerAuth: []
+        - OAuth2PasswordBearer:
+            - pomodoro:write
       parameters:
         - $ref: '#/components/parameters/RoomIdParam'
       responses:
@@ -1350,6 +2397,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PomodoroResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNAUTHORIZED
+                message: Authentication credentials were not provided or are invalid
+                details: null
         '403':
           description: Only room creator or moderator can reset pomodoro
           content:
@@ -1362,13 +2419,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INTERNAL_SERVER_ERROR
+                message: An unexpected error occurred on the server
+                details: null
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: /auth/login
+          scopes:
+            users:read: Read user data
+            projects:read: Read projects
+            projects:write: Create and update projects
+            tags:read: Read tags
+            tags:write: Manage tags
+            rooms:read: Read rooms
+            rooms:write: Create, update and delete rooms
+            participants:read: Read room participants
+            participants:write: Manage room participants
+            chat:read: Read room chat messages
+            chat:write: Send, edit and delete messages
+            board:read: Read board elements and comments
+            board:write: Manage board elements and comments
+            pomodoro:read: Read pomodoro state
+            pomodoro:write: Control pomodoro timer
 
   parameters:
     PageParam:
@@ -1460,9 +2544,33 @@ components:
           type: string
           example: Project with this id does not exist
         details:
-          type: object
           nullable: true
+          oneOf:
+            - type: object
+            - type: string
       required: [error, message]
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Request validation failed
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              message:
+                type: string
+                example: field required
+      required: [error, message, details]
 
     RegisterRequest:
       type: object
@@ -2069,4 +3177,15 @@ components:
           type: string
           format: date-time
       required:
-        [id, room_id, work_duration, short_break_duration, long_break_duration, cycles_before_long, current_phase, completed_cycles, phase_ends_at, session_ends_at, is_running, last_updated_at]
+        - id
+        - room_id
+        - work_duration
+        - short_break_duration
+        - long_break_duration
+        - cycles_before_long
+        - current_phase
+        - completed_cycles
+        - phase_ends_at
+        - session_ends_at
+        - is_running
+        - last_updated_at
