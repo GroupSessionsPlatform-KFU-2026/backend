@@ -1,0 +1,2072 @@
+openapi: 3.0.3
+info:
+  title: Group Sessions Platform API
+  version: 1.0.0
+  description: |
+    Initial OpenAPI specification for the Group Sessions Platform MVP.
+    This specification is based on the ER diagram and covers the main
+    REST operations for authentication, projects, rooms, participants,
+    chat, board, comments and pomodoro management.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: users
+    description: User profile endpoints
+  - name: projects
+    description: Project management
+  - name: tags
+    description: Project tags
+  - name: rooms
+    description: Session rooms
+  - name: participants
+    description: Room participants
+  - name: chat
+    description: Room chat messages
+  - name: board
+    description: Collaborative board elements
+  - name: board-comments
+    description: Comments for board elements
+  - name: pomodoro
+    description: Pomodoro timer management
+
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailExists:
+                  value:
+                    error: EMAIL_ALREADY_EXISTS
+                    message: User with this email already exists
+                    details: null
+                usernameExists:
+                  value:
+                    error: USERNAME_ALREADY_EXISTS
+                    message: User with this username already exists
+                    details: null
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in user
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_CREDENTIALS
+                message: Invalid email or password
+                details: null
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Get current authenticated user
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current authenticated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}:
+    get:
+      tags: [users]
+      summary: Get user by id
+      operationId: getUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: USER_NOT_FOUND
+                message: User with this id does not exist
+                details: null
+
+  /projects:
+    get:
+      tags: [projects]
+      summary: Get project list
+      operationId: getProjects
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: search
+          in: query
+          description: Search by project title
+          schema:
+            type: string
+        - name: owner_id
+          in: query
+          description: Filter by project owner
+          schema:
+            type: integer
+        - name: is_archived
+          in: query
+          description: Filter by archive status
+          schema:
+            type: boolean
+        - name: tag_id
+          in: query
+          description: Filter by assigned tag
+          schema:
+            type: integer
+        - name: ordering
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [created_at, -created_at, title, -title]
+      responses:
+        '200':
+          description: Paginated list of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+    post:
+      tags: [projects]
+      summary: Create a new project
+      operationId: createProject
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{project_id}:
+    get:
+      tags: [projects]
+      summary: Get project by id
+      operationId: getProjectById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: PROJECT_NOT_FOUND
+                message: Project with this id does not exist
+                details: null
+    put:
+      tags: [projects]
+      summary: Update project
+      operationId: updateProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '403':
+          description: Only project owner can update project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: NOT_PROJECT_OWNER
+                message: You do not have permission to update this project
+                details: null
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [projects]
+      summary: Archive project
+      operationId: archiveProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '204':
+          description: Project archived successfully
+        '403':
+          description: Only project owner can archive project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{project_id}/tags:
+    get:
+      tags: [projects]
+      summary: Get tags assigned to a project
+      operationId: getProjectTags
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: Tags assigned to project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [projects]
+      summary: Assign tag to project
+      operationId: assignTagToProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTagRequest'
+      responses:
+        '201':
+          description: Tag assigned to project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTagResponse'
+        '404':
+          description: Project or tag not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Tag already assigned to project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: PROJECT_TAG_ALREADY_EXISTS
+                message: This tag is already assigned to the project
+                details: null
+
+  /projects/{project_id}/tags/{tag_id}:
+    delete:
+      tags: [projects]
+      summary: Remove tag from project
+      operationId: removeTagFromProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+        - $ref: '#/components/parameters/TagIdParam'
+      responses:
+        '204':
+          description: Tag removed from project
+        '404':
+          description: Project, tag or relation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tags:
+    get:
+      tags: [tags]
+      summary: Get tag list
+      operationId: getTags
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: search
+          in: query
+          description: Search by tag name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListResponse'
+    post:
+      tags: [tags]
+      summary: Create a new tag
+      operationId: createTag
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Tag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '409':
+          description: Tag name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: TAG_ALREADY_EXISTS
+                message: Tag with this name already exists
+                details: null
+
+  /tags/{tag_id}:
+    get:
+      tags: [tags]
+      summary: Get tag by id
+      operationId: getTagById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TagIdParam'
+      responses:
+        '200':
+          description: Tag detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '404':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms:
+    get:
+      tags: [rooms]
+      summary: Get room list
+      operationId: getRooms
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: project_id
+          in: query
+          description: Filter by project id
+          schema:
+            type: integer
+        - name: creator_id
+          in: query
+          description: Filter by creator id
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by room status
+          schema:
+            type: string
+            enum: [active, ended]
+        - name: room_code
+          in: query
+          description: Search by room code
+          schema:
+            type: string
+        - name: ordering
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [created_at, -created_at, title, -title]
+      responses:
+        '200':
+          description: Paginated list of rooms
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomListResponse'
+    post:
+      tags: [rooms]
+      summary: Create room
+      operationId: createRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Room created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '404':
+          description: Related project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/join:
+    post:
+      tags: [rooms]
+      summary: Join room by room code
+      operationId: joinRoom
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinRoomRequest'
+      responses:
+        '200':
+          description: Successfully joined room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomParticipantResponse'
+        '404':
+          description: Room with this code not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_ROOM_CODE
+                message: Room with this code does not exist
+                details: null
+        '409':
+          description: Room is full or already ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                roomFull:
+                  value:
+                    error: ROOM_IS_FULL
+                    message: The room has reached the maximum number of participants
+                    details: null
+                roomEnded:
+                  value:
+                    error: ROOM_ALREADY_ENDED
+                    message: Cannot join an ended room
+                    details: null
+
+  /rooms/{room_id}:
+    get:
+      tags: [rooms]
+      summary: Get room by id
+      operationId: getRoomById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Room detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: ROOM_NOT_FOUND
+                message: Room with this id does not exist
+                details: null
+    put:
+      tags: [rooms]
+      summary: Update room
+      operationId: updateRoom
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          description: Room updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '403':
+          description: Only room creator can update room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/end:
+    post:
+      tags: [rooms]
+      summary: End room session
+      operationId: endRoom
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Room ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '403':
+          description: Only room creator can end room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Room already ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: ROOM_ALREADY_ENDED
+                message: The room is already ended
+                details: null
+
+  /rooms/{room_id}/participants:
+    get:
+      tags: [participants]
+      summary: Get room participants
+      operationId: getRoomParticipants
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: role
+          in: query
+          description: Filter by participant role
+          schema:
+            type: string
+            enum: [owner, moderator, participant]
+        - name: is_kicked
+          in: query
+          description: Filter by kicked status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated list of room participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantListResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/participants/{user_id}:
+    patch:
+      tags: [participants]
+      summary: Update participant role or status
+      operationId: updateParticipant
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/UserIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParticipantRequest'
+      responses:
+        '200':
+          description: Participant updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomParticipantResponse'
+        '403':
+          description: Only room creator or moderator can manage participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Participant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [participants]
+      summary: Remove participant from room
+      operationId: removeParticipant
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '204':
+          description: Participant removed from room
+        '403':
+          description: Only room creator or moderator can remove participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Participant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/messages:
+    get:
+      tags: [chat]
+      summary: Get room chat messages
+      operationId: getRoomMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: sender_id
+          in: query
+          description: Filter by sender
+          schema:
+            type: integer
+        - name: sent_after
+          in: query
+          description: Filter messages sent after this datetime
+          schema:
+            type: string
+            format: date-time
+        - name: sent_before
+          in: query
+          description: Filter messages sent before this datetime
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Paginated list of chat messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageListResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [chat]
+      summary: Send message to room chat
+      operationId: createMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Room already ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /messages/{message_id}:
+    put:
+      tags: [chat]
+      summary: Edit chat message
+      operationId: updateMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMessageRequest'
+      responses:
+        '200':
+          description: Message updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageResponse'
+        '403':
+          description: User cannot edit another user's message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: CANNOT_EDIT_FOREIGN_MESSAGE
+                message: You can edit only your own messages
+                details: null
+        '404':
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [chat]
+      summary: Delete chat message
+      operationId: deleteMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageIdParam'
+      responses:
+        '204':
+          description: Message deleted successfully
+        '403':
+          description: User cannot delete another user's message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/board-elements:
+    get:
+      tags: [board]
+      summary: Get board elements
+      operationId: getBoardElements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: author_id
+          in: query
+          description: Filter by element author
+          schema:
+            type: integer
+        - name: element_type
+          in: query
+          description: Filter by board element type
+          schema:
+            type: string
+            enum: [brush, eraser, marker, shape, text]
+        - name: is_deleted
+          in: query
+          description: Filter by deletion status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated list of board elements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardElementListResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [board]
+      summary: Create board element
+      operationId: createBoardElement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoardElementRequest'
+      responses:
+        '201':
+          description: Board element created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardElementResponse'
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Room already ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /board-elements/{element_id}:
+    get:
+      tags: [board]
+      summary: Get board element by id
+      operationId: getBoardElementById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ElementIdParam'
+      responses:
+        '200':
+          description: Board element detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardElementResponse'
+        '404':
+          description: Board element not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [board]
+      summary: Update board element
+      operationId: updateBoardElement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ElementIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoardElementRequest'
+      responses:
+        '200':
+          description: Board element updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardElementResponse'
+        '403':
+          description: User cannot edit another user's element
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: CANNOT_EDIT_FOREIGN_ELEMENT
+                message: You can edit only your own board elements
+                details: null
+        '404':
+          description: Board element not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [board]
+      summary: Delete board element
+      operationId: deleteBoardElement
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ElementIdParam'
+      responses:
+        '204':
+          description: Board element deleted successfully
+        '403':
+          description: User cannot delete another user's element
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Board element not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /board-elements/{element_id}/comments:
+    get:
+      tags: [board-comments]
+      summary: Get comments for board element
+      operationId: getBoardElementComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ElementIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: author_id
+          in: query
+          description: Filter by author id
+          schema:
+            type: integer
+        - name: is_deleted
+          in: query
+          description: Filter by deletion status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated list of board comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardCommentListResponse'
+        '404':
+          description: Board element not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [board-comments]
+      summary: Add comment to board element
+      operationId: createBoardComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ElementIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoardCommentRequest'
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardCommentResponse'
+        '404':
+          description: Board element not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /board-comments/{comment_id}:
+    put:
+      tags: [board-comments]
+      summary: Update board comment
+      operationId: updateBoardComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CommentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoardCommentRequest'
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardCommentResponse'
+        '403':
+          description: User cannot edit another user's comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [board-comments]
+      summary: Delete board comment
+      operationId: deleteBoardComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CommentIdParam'
+      responses:
+        '204':
+          description: Comment deleted successfully
+        '403':
+          description: User cannot delete another user's comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/pomodoro:
+    get:
+      tags: [pomodoro]
+      summary: Get pomodoro state for room
+      operationId: getPomodoro
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Current pomodoro state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PomodoroResponse'
+        '404':
+          description: Pomodoro session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: POMODORO_NOT_FOUND
+                message: Pomodoro session for this room does not exist
+                details: null
+
+  /rooms/{room_id}/pomodoro/settings:
+    patch:
+      tags: [pomodoro]
+      summary: Update pomodoro settings
+      operationId: updatePomodoroSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePomodoroSettingsRequest'
+      responses:
+        '200':
+          description: Pomodoro settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PomodoroResponse'
+        '403':
+          description: Only room creator or moderator can update pomodoro settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pomodoro session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rooms/{room_id}/pomodoro/start:
+    post:
+      tags: [pomodoro]
+      summary: Start pomodoro
+      operationId: startPomodoro
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Pomodoro started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PomodoroResponse'
+        '403':
+          description: Only room creator or moderator can start pomodoro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pomodoro session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Pomodoro already running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: POMODORO_ALREADY_RUNNING
+                message: Pomodoro is already running
+                details: null
+
+  /rooms/{room_id}/pomodoro/pause:
+    post:
+      tags: [pomodoro]
+      summary: Pause pomodoro
+      operationId: pausePomodoro
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Pomodoro paused successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PomodoroResponse'
+        '403':
+          description: Only room creator or moderator can pause pomodoro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pomodoro session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Pomodoro is not running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: POMODORO_NOT_RUNNING
+                message: Pomodoro is not running
+                details: null
+
+  /rooms/{room_id}/pomodoro/reset:
+    post:
+      tags: [pomodoro]
+      summary: Reset pomodoro
+      operationId: resetPomodoro
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RoomIdParam'
+      responses:
+        '200':
+          description: Pomodoro reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PomodoroResponse'
+        '403':
+          description: Only room creator or moderator can reset pomodoro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pomodoro session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      required: false
+      description: Page number
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PageSizeParam:
+      name: page_size
+      in: query
+      required: false
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+    UserIdParam:
+      name: user_id
+      in: path
+      required: true
+      description: User identifier
+      schema:
+        type: integer
+
+    ProjectIdParam:
+      name: project_id
+      in: path
+      required: true
+      description: Project identifier
+      schema:
+        type: integer
+
+    TagIdParam:
+      name: tag_id
+      in: path
+      required: true
+      description: Tag identifier
+      schema:
+        type: integer
+
+    RoomIdParam:
+      name: room_id
+      in: path
+      required: true
+      description: Room identifier
+      schema:
+        type: string
+        format: uuid
+
+    MessageIdParam:
+      name: message_id
+      in: path
+      required: true
+      description: Message identifier
+      schema:
+        type: integer
+
+    ElementIdParam:
+      name: element_id
+      in: path
+      required: true
+      description: Board element identifier
+      schema:
+        type: integer
+
+    CommentIdParam:
+      name: comment_id
+      in: path
+      required: true
+      description: Comment identifier
+      schema:
+        type: integer
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: PROJECT_NOT_FOUND
+        message:
+          type: string
+          example: Project with this id does not exist
+        details:
+          type: object
+          nullable: true
+      required: [error, message]
+
+    RegisterRequest:
+      type: object
+      required: [email, username, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: alex123
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: secret123
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: secret123
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: bearer
+      required: [access_token, token_type]
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        username:
+          type: string
+          example: alex123
+        avatar_url:
+          type: string
+          nullable: true
+          example: https://example.com/avatar.png
+        created_at:
+          type: string
+          format: date-time
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+          example: true
+      required: [id, email, username, created_at, is_active]
+
+    CreateProjectRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: Math Study Group
+        description:
+          type: string
+          nullable: true
+          example: Shared project for exam preparation
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: Updated project title
+        description:
+          type: string
+          nullable: true
+        is_archived:
+          type: boolean
+
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        owner_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Math Study Group
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_archived:
+          type: boolean
+          example: false
+      required: [id, owner_id, title, created_at, is_archived]
+
+    ProjectListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 25
+        page:
+          type: integer
+          example: 1
+        page_size:
+          type: integer
+          example: 10
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+      required: [count, page, page_size, results]
+
+    AssignTagRequest:
+      type: object
+      required: [tag_id]
+      properties:
+        tag_id:
+          type: integer
+          example: 3
+
+    ProjectTagResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        project_id:
+          type: integer
+          example: 10
+        tag_id:
+          type: integer
+          example: 3
+        created_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+          example: true
+      required: [id, project_id, tag_id, created_at, is_active]
+
+    CreateTagRequest:
+      type: object
+      required: [name, color]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: urgent
+        color:
+          type: string
+          maxLength: 50
+          example: red
+        description:
+          type: string
+          nullable: true
+          example: Important or urgent tasks
+
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: urgent
+        color:
+          type: string
+          example: red
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required: [id, name, color, created_at]
+
+    TagListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+      required: [count, page, page_size, results]
+
+    CreateRoomRequest:
+      type: object
+      required: [project_id, title, max_participants]
+      properties:
+        project_id:
+          type: integer
+          example: 10
+        title:
+          type: string
+          maxLength: 255
+          example: Physics Session
+        max_participants:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 6
+
+    UpdateRoomRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, ended]
+        max_participants:
+          type: integer
+          minimum: 1
+          maximum: 100
+
+    JoinRoomRequest:
+      type: object
+      required: [room_code]
+      properties:
+        room_code:
+          type: string
+          maxLength: 50
+          example: ABC123
+
+    RoomResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: integer
+          example: 10
+        creator_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Physics Session
+        room_code:
+          type: string
+          example: ABC123
+        created_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [active, ended]
+        max_participants:
+          type: integer
+          example: 6
+      required: [id, project_id, creator_id, title, room_code, created_at, status, max_participants]
+
+    RoomListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomResponse'
+      required: [count, page, page_size, results]
+
+    RoomParticipantResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        room_id:
+          type: string
+          format: uuid
+        user_id:
+          type: integer
+          example: 2
+        role:
+          type: string
+          enum: [owner, moderator, participant]
+        joined_at:
+          type: string
+          format: date-time
+        left_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_kicked:
+          type: boolean
+          example: false
+      required: [id, room_id, user_id, role, joined_at, is_kicked]
+
+    ParticipantListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomParticipantResponse'
+      required: [count, page, page_size, results]
+
+    UpdateParticipantRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [moderator, participant]
+        is_kicked:
+          type: boolean
+
+    CreateMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          example: Hello everyone
+
+    UpdateMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          example: Updated message text
+
+    ChatMessageResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100
+        room_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: integer
+          example: 2
+        content:
+          type: string
+          example: Hello everyone
+        sent_at:
+          type: string
+          format: date-time
+        is_edited:
+          type: boolean
+          example: false
+      required: [id, room_id, sender_id, content, sent_at, is_edited]
+
+    MessageListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessageResponse'
+      required: [count, page, page_size, results]
+
+    CreateBoardElementRequest:
+      type: object
+      required: [element_type, data]
+      properties:
+        element_type:
+          type: string
+          enum: [brush, eraser, marker, shape, text]
+          example: marker
+        data:
+          type: object
+          additionalProperties: true
+          example:
+            x: 120
+            y: 340
+            text: Discuss this part
+
+    UpdateBoardElementRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        is_deleted:
+          type: boolean
+
+    BoardElementResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 55
+        room_id:
+          type: string
+          format: uuid
+        author_id:
+          type: integer
+          example: 2
+        element_type:
+          type: string
+          enum: [brush, eraser, marker, shape, text]
+        data:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_deleted:
+          type: boolean
+          example: false
+      required: [id, room_id, author_id, element_type, data, created_at, is_deleted]
+
+    BoardElementListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardElementResponse'
+      required: [count, page, page_size, results]
+
+    CreateBoardCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          example: We should improve this section
+
+    UpdateBoardCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          example: Updated comment text
+
+    BoardCommentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 8
+        board_element_id:
+          type: integer
+          example: 55
+        author_id:
+          type: integer
+          example: 3
+        content:
+          type: string
+          example: We should improve this section
+        is_deleted:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+      required: [id, board_element_id, author_id, content, is_deleted, created_at]
+
+    BoardCommentListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardCommentResponse'
+      required: [count, page, page_size, results]
+
+    UpdatePomodoroSettingsRequest:
+      type: object
+      properties:
+        work_duration:
+          type: integer
+          minimum: 1
+          example: 25
+        short_break_duration:
+          type: integer
+          minimum: 1
+          example: 5
+        long_break_duration:
+          type: integer
+          minimum: 1
+          example: 15
+        cycles_before_long:
+          type: integer
+          minimum: 1
+          example: 4
+
+    PomodoroResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        room_id:
+          type: string
+          format: uuid
+        work_duration:
+          type: integer
+          example: 25
+        short_break_duration:
+          type: integer
+          example: 5
+        long_break_duration:
+          type: integer
+          example: 15
+        cycles_before_long:
+          type: integer
+          example: 4
+        current_phase:
+          type: string
+          enum: [work, short_break, long_break, paused]
+          example: work
+        completed_cycles:
+          type: integer
+          example: 2
+        phase_ends_at:
+          type: string
+          format: date-time
+        session_ends_at:
+          type: string
+          format: date-time
+        is_running:
+          type: boolean
+          example: true
+        last_updated_at:
+          type: string
+          format: date-time
+      required:
+        [id, room_id, work_duration, short_break_duration, long_break_duration, cycles_before_long, current_phase, completed_cycles, phase_ends_at, session_ends_at, is_running, last_updated_at]
