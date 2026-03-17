@@ -1,14 +1,21 @@
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from .models import create_db_and_tables
+from fastapi import APIRouter, FastAPI
 
-app = FastAPI()
+from src.app.routers import projects, rooms, users
 
-@app.get('/')
-def read_root():
-    return {'Hello': 'World'}
+app = FastAPI(
+    title='Group Sessions Platform API',
+    version='1.0.0',
+)
+
+api_router = APIRouter(prefix='/api/v1')
+
+api_router.include_router(users.router)
+api_router.include_router(projects.router)
+api_router.include_router(rooms.router)
+
+app.include_router(api_router)
 
 
-@app.get('/items/{item_id}')
-def read_item(item_id: int, q: str | None = None):
-    return {'item_id': item_id, 'q': q}
+@app.get('/health')
+async def healthcheck():
+    return {'status': 'ok'}
