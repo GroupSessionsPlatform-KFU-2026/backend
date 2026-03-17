@@ -1,7 +1,7 @@
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.settings import settings
+from src.app.core.settings import settings
 
 
 def form_db_url() -> str:

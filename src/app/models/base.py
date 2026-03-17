@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, SQLModel
 
 
-class Base(SQLModel):
+class BaseModel(SQLModel):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         nullable=False,

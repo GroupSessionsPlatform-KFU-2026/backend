@@ -1,0 +1,80 @@
+from typing import Optional, Sequence
+from uuid import UUID
+
+from src.app.dependencies.repositories import (
+    RoomParticipantRepository,
+    RoomParticipantRepositoryDep,
+    RoomRepository,
+    RoomRepositoryDep,
+)
+from src.app.models.room import Room, RoomCreate, RoomUpdate
+from src.app.models.room_participant import RoomParticipant
+from src.app.schemas.room_filters import RoomFilters
+
+
+class RoomService:
+    __room_repository: RoomRepository
+    __room_participant_repository: RoomParticipantRepository
+
+    def __init__(
+        self,
+        room_repository: RoomRepositoryDep,
+        room_participant_repository: RoomParticipantRepositoryDep,
+    ):
+        self.__room_repository = room_repository
+        self.__room_participant_repository = room_participant_repository
+
+    async def get_rooms(self, filters: RoomFilters) -> Sequence[Room]:
+        return await self.__room_repository.fetch(
+            filters=filters,
+            offset=filters.offset,
+            limit=filters.limit,
+        )
+
+    async def create_room(self, creator_id: int, room_create: RoomCreate) -> Room:
+        room_dump = room_create.model_dump()
+        room = Room(
+            **room_dump,
+            creator_id=creator_id,
+            status='active',
+        )
+        return await self.__room_repository.save(room)
+
+    async def get_room(self, room_id: UUID) -> Optional[Room]:
+        return await self.__room_repository.get(room_id)
+
+    async def update_room(
+        self, room_update: RoomUpdate, room_id: UUID
+    ) -> Optional[Room]:
+        return await self.__room_repository.update(room_id, room_update)
+
+    async def end_room(self, room_id: UUID) -> Optional[Room]:
+        room = await self.__room_repository.get(room_id)
+        if room is None:
+            return None
+        room.status = 'ended'
+        return await self.__room_repository.save(room)
+
+    async def join_room(
+        self, room_code: str, user_id: int
+    ) -> Optional[RoomParticipant]:
+
+        filters = RoomFilters(room_code=room_code, offset=0, limit=1)
+        rooms = await self.__room_repository.fetch(
+            filters=filters,
+            offset=filters.offset,
+            limit=filters.limit,
+        )
+
+        if not rooms:
+            return None
+
+        room = rooms[0]
+
+        participant = RoomParticipant(
+            room_id=room.id,
+            user_id=user_id,
+            role='participant',
+            is_kicked=False,
+        )
+        return await self.__room_participant_repository.save(participant)

@@ -16,9 +16,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
-from .base import Base
+from .base import BaseModel
 
 if TYPE_CHECKING:
     from .board_element import BoardElement
@@ -29,13 +29,13 @@ if TYPE_CHECKING:
     from .user import User
 
 
-class RoomBase(Base):
+class RoomBase(SQLModel):
     title: str
     room_code: str = Field(index=True)
     status: str
 
 
-class RoomPublic(RoomBase):
+class RoomPublic(BaseModel, RoomBase):
     id: UUID
     project_id: int
     creator_id: int
