@@ -1,16 +1,3 @@
-# from datetime import datetime
-# from uuid import UUID, uuid4
-# from sqlmodel import SQLModel, Field
-
-# class RoomParticipant(SQLModel, table=True):
-#     id: int | None = Field(default=None, primary_key=True)
-#     room_id: UUID = Field(foreign_key="room.id")
-#     user_id: int = Field(foreign_key="user.id")
-#     role: str
-#     joined_at: datetime
-#     left_at: datetime | None = None
-#     is_kicked: bool
-
 from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID

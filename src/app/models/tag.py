@@ -1,13 +1,3 @@
-# from datetime import datetime
-# from sqlmodel import SQLModel, Field
-
-# class Tag(SQLModel, table=True):
-#     id: int | None = Field(default=None, primary_key=True)
-#     name: str = Field(index=True)
-#     color: str
-#     description: str | None = None
-#     created_at: datetime
-
 from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
