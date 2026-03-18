@@ -1,17 +1,3 @@
-# from datetime import datetime
-# from sqlmodel import SQLModel, Field
-# from uuid import UUID, uuid4
-
-# class Room(SQLModel, table=True):
-#     id: UUID = Field(default_factory=uuid4, primary_key=True)
-#     project_id: int = Field(foreign_key="project.id")
-#     creator_id: int = Field(foreign_key="user.id")
-#     title: str
-#     room_code: str = Field(index=True)
-#     created_at: datetime
-#     ended_at: datetime | None = None
-#     status: str
-
 from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID

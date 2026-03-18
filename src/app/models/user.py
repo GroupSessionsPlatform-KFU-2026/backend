@@ -1,17 +1,3 @@
-# from datetime import datetime
-# from sqlmodel import SQLModel, Field
-
-# class User(SQLModel, table=True):
-#     id: int | None = Field(default=None, primary_key=True)
-#     email: str = Field(index=True)
-#     username: str = Field(index=True)
-#     password_hash: str
-#     avatar_url: str | None = None
-#     created_at: datetime
-#     last_login_at: datetime | None = None
-#     is_active: bool
-
-
 from datetime import datetime
 from typing import TYPE_CHECKING
 

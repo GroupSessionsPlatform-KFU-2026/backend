@@ -1,16 +1,5 @@
-# from datetime import datetime
-# from sqlmodel import SQLModel, Field
-
-# class Project(SQLModel, table=True):
-#     id: int | None = Field(default=None, primary_key=True)
-#     owner_id: int = Field(foreign_key="user.id")
-#     title: str
-#     description: str | None=None
-#     created_at: datetime
-#     updated_at: datetime | None = None
-#     is_archived: bool
-
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlmodel import Relationship, SQLModel
 
@@ -28,12 +17,12 @@ class ProjectBase(SQLModel):
 
 
 class ProjectPublic(BaseModel, ProjectBase):
-    owner_id: int
+    owner_id: UUID
     is_archived: bool = False
 
 
 class ProjectCreate(ProjectBase):
-    owner_id: int
+    owner_id: UUID
 
 
 class ProjectUpdate(ProjectBase):
