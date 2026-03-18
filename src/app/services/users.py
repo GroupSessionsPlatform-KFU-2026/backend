@@ -22,7 +22,7 @@ class UserService:
     async def create_user(self, user_create: UserCreate) -> User:
         user_dump = user_create.model_dump()
         password = str(user_dump.pop('password'))
-        password_hash = password  # temporal, luego cambias a hash real
+        password_hash = password  # teporally then we'll use bcrypt + jwt-jose(maybe)
         user = User(**user_dump, password_hash=password_hash)
         return await self.__user_repository.save(user)
 
