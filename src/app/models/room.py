@@ -14,9 +14,9 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -31,33 +31,28 @@ if TYPE_CHECKING:
 
 class RoomBase(SQLModel):
     title: str
-    room_code: str = Field(index=True)
-    status: str
+    max_participants: int
 
 
 class RoomPublic(BaseModel, RoomBase):
-    id: UUID
-    project_id: int
-    creator_id: int
+    project_id: UUID
+    creator_id: UUID
+    room_code: str
+    ended_at: datetime | None = None
+    status: str
 
 
 class RoomCreate(RoomBase):
-    project_id: int
-    creator_id: int
+    project_id: UUID
+    creator_id: UUID
 
 
 class RoomUpdate(RoomBase):
-    title: str | None = None
-    room_code: str | None = None
-    status: str | None = None
+    pass
 
 
 class Room(RoomPublic, table=True):
     __tablename__ = 'room'
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    project_id: int = Field(foreign_key='project.id')
-    creator_id: int = Field(foreign_key='user.id')
-    ended_at: datetime | None = None
 
     project: 'Project' = Relationship(back_populates='rooms')
     creator: 'User' = Relationship(back_populates='created_rooms')

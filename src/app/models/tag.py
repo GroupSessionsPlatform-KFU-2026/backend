@@ -25,7 +25,7 @@ class TagBase(SQLModel):
 
 
 class TagPublic(BaseModel, TagBase):
-    id: int
+    pass
 
 
 class TagCreate(TagBase):
@@ -33,13 +33,10 @@ class TagCreate(TagBase):
 
 
 class TagUpdate(TagBase):
-    name: str | None = None
-    color: str | None = None
-    description: str | None = None
+    pass
 
 
 class Tag(TagPublic, table=True):
     __tablename__ = 'tag'
-    id: int | None = Field(default=None, primary_key=True)
 
     project_tags: list['ProjectTag'] = Relationship(back_populates='tag')

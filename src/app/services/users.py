@@ -1,4 +1,5 @@
 from typing import Optional, Sequence
+from uuid import UUID
 
 from src.app.dependencies.repositories import UserRepository, UserRepositoryDep
 from src.app.models.user import User, UserCreate, UserUpdate
@@ -25,16 +26,16 @@ class UserService:
         user = User(**user_dump, password_hash=password_hash)
         return await self.__user_repository.save(user)
 
-    async def get_user(self, user_id: int) -> Optional[User]:
+    async def get_user(self, user_id: UUID) -> Optional[User]:
         return await self.__user_repository.get(user_id)
 
     async def update_user(
-        self, user_update: UserUpdate, user_id: int
+        self, user_update: UserUpdate, user_id: UUID
     ) -> Optional[User]:
         return await self.__user_repository.update(user_id, user_update)
 
-    async def delete_user(self, user_id: int) -> Optional[User]:
+    async def delete_user(self, user_id: UUID) -> Optional[User]:
         return await self.__user_repository.delete(user_id)
 
-    async def get_me(self, user_id: int) -> Optional[User]:
+    async def get_me(self, user_id: UUID) -> Optional[User]:
         return await self.__user_repository.get(user_id)

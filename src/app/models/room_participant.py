@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -25,33 +25,27 @@ if TYPE_CHECKING:
 
 
 class RoomParticipantBase(SQLModel):
-    role: str
-    is_kicked: bool = False
+    room_id: UUID
+    user_id: UUID
 
 
 class RoomParticipantPublic(BaseModel, RoomParticipantBase):
-    id: int
-    room_id: UUID
-    user_id: int
+    role: str
+    joined_at: datetime | None = None
+    left_at: datetime | None = None
+    is_kicked: bool
 
 
 class RoomParticipantCreate(RoomParticipantBase):
-    room_id: UUID
-    user_id: int
+    pass
 
 
 class RoomParticipantUpdate(RoomParticipantBase):
-    role: str | None = None
-    is_kicked: bool | None = None
+    pass
 
 
 class RoomParticipant(RoomParticipantPublic, table=True):
     __tablename__ = 'room_participant'
-    id: int | None = Field(default=None, primary_key=True)
-    room_id: UUID = Field(foreign_key='room.id')
-    user_id: int = Field(foreign_key='user.id')
-    joined_at: datetime | None = None
-    left_at: datetime | None = None
 
     room: 'Room' = Relationship(back_populates='participants')
     user: 'User' = Relationship(back_populates='participations')

@@ -1,8 +1,10 @@
+from uuid import UUID
+
 from .base import CommonListFilters
 
 
 class RoomFilters(CommonListFilters):
-    project_id: int | None = None
-    creator_id: int | None = None
+    project_id: UUID | None = None
+    creator_id: UUID | None = None
     status: str | None = None
     room_code: str | None = None

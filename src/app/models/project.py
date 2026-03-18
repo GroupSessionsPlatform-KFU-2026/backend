@@ -12,7 +12,7 @@
 
 from typing import TYPE_CHECKING
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -25,12 +25,11 @@ if TYPE_CHECKING:
 class ProjectBase(SQLModel):
     title: str
     description: str | None = None
-    is_archived: bool = False
 
 
 class ProjectPublic(BaseModel, ProjectBase):
-    id: int
     owner_id: int
+    is_archived: bool = False
 
 
 class ProjectCreate(ProjectBase):
@@ -38,15 +37,11 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(ProjectBase):
-    title: str | None = None
-    description: str | None = None
-    is_archived: bool | None = None
+    pass
 
 
 class Project(ProjectPublic, table=True):
     __tablename__ = 'project'
-    id: int | None = Field(default=None, primary_key=True)
-    owner_id: int = Field(foreign_key='user.id')
 
     owner: 'User' = Relationship(back_populates='projects')
     tags: list['ProjectTag'] = Relationship(back_populates='project')

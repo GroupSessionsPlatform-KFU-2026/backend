@@ -1,4 +1,5 @@
 from typing import Annotated, Optional, Sequence
+from uuid import UUID
 
 from fastapi import APIRouter, Query
 
@@ -26,14 +27,13 @@ async def create_project(
     project_create: ProjectCreate,
     project_service: ProjectServiceDep,
 ) -> ProjectPublic:
-    # temporal: luego owner_id saldrá del usuario autenticado
-    return await project_service.create_project(1, project_create)
+    return await project_service.create_project(project_create)
 
 
 @router.get('/{project_id}')
 async def get_project(
     project_service: ProjectServiceDep,
-    project_id: int,
+    project_id: UUID,
 ) -> Optional[ProjectPublic]:
     return await project_service.get_project(project_id)
 
@@ -42,7 +42,7 @@ async def get_project(
 async def update_project(
     project_service: ProjectServiceDep,
     project_update: ProjectUpdate,
-    project_id: int,
+    project_id: UUID,
 ) -> Optional[ProjectPublic]:
     return await project_service.update_project(project_update, project_id)
 
@@ -50,7 +50,7 @@ async def update_project(
 @router.delete('/{project_id}')
 async def archive_project(
     project_service: ProjectServiceDep,
-    project_id: int,
+    project_id: UUID,
 ) -> Optional[ProjectPublic]:
     return await project_service.archive_project(project_id)
 
@@ -58,7 +58,7 @@ async def archive_project(
 @router.get('/{project_id}/tags')
 async def get_project_tags(
     project_service: ProjectServiceDep,
-    project_id: int,
+    project_id: UUID,
 ) -> Sequence[ProjectTagPublic]:
     return await project_service.get_project_tags(project_id)
 
@@ -66,8 +66,8 @@ async def get_project_tags(
 @router.post('/{project_id}/tags/{tag_id}')
 async def assign_tag_to_project(
     project_service: ProjectServiceDep,
-    project_id: int,
-    tag_id: int,
+    project_id: UUID,
+    tag_id: UUID,
 ) -> ProjectTagPublic:
     return await project_service.assign_tag_to_project(project_id, tag_id)
 
@@ -75,7 +75,7 @@ async def assign_tag_to_project(
 @router.delete('/{project_id}/tags/{tag_id}')
 async def remove_tag_from_project(
     project_service: ProjectServiceDep,
-    project_id: int,
-    tag_id: int,
+    project_id: UUID,
+    tag_id: UUID,
 ) -> Optional[ProjectTagPublic]:
     return await project_service.remove_tag_from_project(project_id, tag_id)

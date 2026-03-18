@@ -1,17 +1,7 @@
-# from datetime import datetime
-# from sqlmodel import SQLModel, Field
-
-# class BoardElementComment(SQLModel, table=True):
-#     id: int | None = Field(default=None, primary_key=True)
-#     board_element_id: int = Field(foreign_key="boardelement.id")
-#     author_id: int = Field(foreign_key="user.id")
-#     content: str
-#     is_deleted: bool
-#     created_at: datetime
-
 from typing import TYPE_CHECKING
+from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -22,30 +12,25 @@ if TYPE_CHECKING:
 
 class BoardElementCommentBase(SQLModel):
     content: str
-    is_deleted: bool = False
 
 
 class BoardElementCommentPublic(BaseModel, BoardElementCommentBase):
-    id: int
-    board_element_id: int
-    author_id: int
+    board_element_id: UUID
+    author_id: UUID
+    is_deleted: bool
 
 
 class BoardElementCommentCreate(BoardElementCommentBase):
-    board_element_id: int
-    author_id: int
+    board_element_id: UUID
+    author_id: UUID
 
 
 class BoardElementCommentUpdate(BoardElementCommentBase):
-    content: str | None = None
-    is_deleted: bool | None = None
+    pass
 
 
 class BoardElementComment(BoardElementCommentPublic, table=True):
     __tablename__ = 'board_element_comment'
-    id: int | None = Field(default=None, primary_key=True)
-    board_element_id: int = Field(foreign_key='board_element.id')
-    author_id: int = Field(foreign_key='user.id')
 
     board_element: 'BoardElement' = Relationship(back_populates='comments')
     author: 'User' = Relationship(back_populates='comments')
