@@ -176,3 +176,6 @@ class RoomService:
             is_kicked=False,
         )
         return await self.__room_participant_repository.save(participant)
+    
+    async def count_rooms(self, filters: RoomFilters) -> int:
+        return await self.__room_repository.count(filters=filters)

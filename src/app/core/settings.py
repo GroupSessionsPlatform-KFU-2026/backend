@@ -32,6 +32,33 @@ class SocketSettings(BaseModel):
     cors_allowed_origins: str | list[str] = '*'
     path: str = 'socket.io'
 
+class CommonSettings(BaseModel):
+    host: str = 'http://localhost:8000'
+    frontend_host: str = 'http://localhost:5173'
+    cors_allowed_origins: list[str] = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8080',
+    ]
+    cors_allowed_methods: list[str] = [
+        'GET',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'OPTIONS',
+    ]
+    cors_allowed_headers: list[str] = [
+        'Authorization',
+        'Content-Type',
+        'Accept',
+    ]
+
+
+class RateLimitSettings(BaseModel):
+    default: str = '100/minute'
+    auth: str = '10/minute'
+
 
 class EmailSettings(BaseModel):
     username: str = 'studiom.backend@gmail.com'
@@ -61,7 +88,8 @@ class Settings(BaseSettings):
     rbac: RBACSettings = RBACSettings()
     socket: SocketSettings = SocketSettings()
     email: EmailSettings = EmailSettings()
-
+    common: CommonSettings = CommonSettings()
+    rate_limit: RateLimitSettings = RateLimitSettings()
 
 @lru_cache
 def get_settings() -> Settings:

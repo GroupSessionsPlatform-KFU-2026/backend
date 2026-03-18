@@ -116,3 +116,18 @@ class BoardElementCommentService:
 
         comment.is_deleted = True
         return await self.__repository.save(comment)
+    
+    async def count_comments(
+        self,
+        room_id: UUID,
+        element_id: UUID,
+        filters: BoardElementCommentFilters,
+    ) -> int:
+        element = await self.get_room_element(room_id, element_id)
+        if element is None:
+            return 0
+
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'board_element_id': element_id},
+        )

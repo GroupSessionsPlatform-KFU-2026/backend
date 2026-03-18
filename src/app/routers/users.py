@@ -7,6 +7,8 @@ from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import User as UserModel
 from src.app.models.user import UserPublic
+from src.app.core.responses import auth_responses, detail_responses
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/users',
@@ -14,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.get('/me')
+@router.get('/me', responses=auth_responses,)
 async def get_me(
     current_user: Annotated[
         UserModel,
@@ -27,9 +29,18 @@ async def get_me(
 @router.get(
     '/{user_id}',
     dependencies=[Security(require_scoped_user, scopes=['users:read'])],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def get_user(
     user_id: UUID,
     user_service: UserServiceDep,
-) -> Optional[UserPublic]:
-    return await user_service.get_user(user_id)
+) -> UserPublic:
+    user = await user_service.get_user(user_id)
+
+    if user is None:
+        raise NotFoundError
+
+    return user

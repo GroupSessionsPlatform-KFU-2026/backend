@@ -21,7 +21,10 @@ dependencies = [
     "python-multipart>=0.0.24",
     "pyjwt>=2.12.1",
     "python-socketio>=5.16.1",
+
     "fastapi-mail>=1.6.2",
+    "slowapi>=0.1.9",
+    "gunicorn>=25.3.0",
 ]
 
 [dependency-groups]

@@ -1,14 +1,15 @@
-from contextlib import asynccontextmanager
-
 from fastapi import APIRouter, FastAPI
-from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-from src.app.db.engine import engine
-from src.app.models.permission import Permission
-from src.app.models.role import Role
-from src.app.models.role_permission import RolePermissionLink
-from src.app.models.user import User
-from src.app.models.user_role import UserRoleLink
+from src.app.core.error_handler import exception_handler
+from src.app.core.limiter import limiter
+from src.app.core.middlewares import request_logging_middleware
+from src.app.core.responses import common_responses
+from src.app.core.settings import settings
 from src.app.routers import (
     auth,
     board,
@@ -22,32 +23,39 @@ from src.app.routers import (
     user_roles,
     users,
 )
-from src.app.services.rbac_bootstrap import RBACBootstrapService
 from src.app.sockets.server import create_socket_app
-from src.app.utils.repository import Repository
-
-
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    async with AsyncSession(engine) as session:
-        bootstrap_service = RBACBootstrapService(
-            permission_repository=Repository[Permission](session),
-            role_repository=Repository[Role](session),
-            role_permission_repository=Repository[RolePermissionLink](session),
-            user_repository=Repository[User](session),
-            user_role_repository=Repository[UserRoleLink](session),
-        )
-        await bootstrap_service.bootstrap()
-    yield
 
 
 fastapi_app = FastAPI(
     title='Group Sessions Platform API',
     version='1.1.0',
-    lifespan=lifespan,
 )
 
-api_router = APIRouter(prefix='/api/v1')
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.common.cors_allowed_origins,
+    allow_credentials=True,
+    allow_methods=settings.common.cors_allowed_methods,
+    allow_headers=settings.common.cors_allowed_headers,
+)
+
+fastapi_app.state.limiter = limiter
+fastapi_app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
+fastapi_app.add_middleware(SlowAPIMiddleware)
+
+fastapi_app.add_exception_handler(
+    exc_class_or_status_code=Exception,
+    handler=exception_handler,
+)
+
+api_router = APIRouter(
+    prefix='/api/v1',
+    responses=common_responses,
+)
+
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(projects.router)
@@ -61,6 +69,31 @@ api_router.include_router(pomodoro.router)
 api_router.include_router(user_roles.router)
 
 fastapi_app.include_router(api_router)
+fastapi_app.middleware('http')(request_logging_middleware)
+
+
+def custom_openapi():
+    if fastapi_app.openapi_schema:
+        return fastapi_app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title='Group Sessions Platform API',
+        version='1.1.0',
+        description='API for group study sessions platform',
+        routes=fastapi_app.routes,
+        servers=[
+            {
+                'url': settings.common.host,
+                'description': 'Local server',
+            },
+        ],
+    )
+
+    fastapi_app.openapi_schema = openapi_schema
+    return fastapi_app.openapi_schema
+
+
+fastapi_app.openapi = custom_openapi
 
 
 @fastapi_app.get('/health')

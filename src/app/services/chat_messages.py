@@ -85,3 +85,13 @@ class ChatMessageService:
         if message is None:
             return None
         return await self.__repository.delete(message.id)
+    
+    async def count_messages(
+        self,
+        room_id: UUID,
+        filters: ChatMessageFilters,
+    ) -> int:
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'room_id': room_id},
+        )

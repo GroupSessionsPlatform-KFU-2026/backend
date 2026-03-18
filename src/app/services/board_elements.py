@@ -80,3 +80,13 @@ class BoardElementService:
 
         element.is_deleted = True
         return await self.__repository.save(element)
+    
+    async def count_elements(
+        self,
+        room_id: UUID,
+        filters: BoardElementFilters,
+    ) -> int:
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'room_id': room_id},
+        )

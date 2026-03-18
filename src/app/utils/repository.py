@@ -140,3 +140,15 @@ class Repository[Model: BaseModel]:
 
         await self.save(instance)
         return instance
+    
+    async def count(
+        self,
+        filters: Optional[PydanticBaseModel] = None,
+        extra_filters: Optional[dict[str, Any]] = None,
+    ) -> int:
+        return len(
+            await self.fetch(
+                filters=filters,
+                extra_filters=extra_filters,
+            )
+        )

@@ -13,6 +13,9 @@ from src.app.models.board_element import (
 )
 from src.app.models.user import User as UserModel
 from src.app.schemas.board_elements_filters import BoardElementFilters
+from src.app.core.responses import auth_responses, detail_responses
+from src.app.utils.errors import NotFoundError
+from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
 
 router = APIRouter(
     prefix='/rooms/{room_id}/board-elements',
@@ -23,16 +26,25 @@ router = APIRouter(
 @router.get(
     '/',
     dependencies=[Security(require_scoped_user, scopes=['board:read'])],
+    responses=auth_responses,
 )
 async def get_board_elements(
     room_id: UUID,
     filters: Annotated[BoardElementFilters, Query()],
     board_service: BoardElementServiceDep,
-) -> Sequence[BoardElementPublic]:
-    return await board_service.get_elements(room_id, filters)
+) -> PaginatedResponse[BoardElementPublic]:
+    elements = await board_service.get_elements(room_id, filters)
+    total = await board_service.count_elements(room_id, filters)
+
+    return build_paginated_response(
+        items=list(elements),
+        total=total,
+        offset=filters.offset,
+        limit=filters.limit,
+    )
 
 
-@router.post('/')
+@router.post('/', responses=auth_responses,)
 async def create_board_element(
     room_id: UUID,
     element_create: BoardElementCreate,
@@ -58,15 +70,23 @@ async def create_board_element(
             require_board_element_manage_access,
             scopes=['board:write'],
         )
-    ],
+    ], responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def update_board_element(
     room_id: UUID,
     element_id: UUID,
     element_update: BoardElementUpdate,
     board_service: BoardElementServiceDep,
-) -> Optional[BoardElementPublic]:
-    return await board_service.update_element(room_id, element_id, element_update)
+) -> BoardElementPublic:
+    element = await board_service.update_element(room_id, element_id, element_update)
+
+    if element is None:
+        raise NotFoundError
+
+    return element
 
 
 @router.delete(
@@ -76,11 +96,19 @@ async def update_board_element(
             require_board_element_manage_access,
             scopes=['board:delete'],
         )
-    ],
+    ], responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def delete_board_element(
     room_id: UUID,
     element_id: UUID,
     board_service: BoardElementServiceDep,
-) -> Optional[BoardElementPublic]:
-    return await board_service.delete_element(room_id, element_id)
+) -> BoardElementPublic:
+    element = await board_service.delete_element(room_id, element_id)
+
+    if element is None:
+        raise NotFoundError
+
+    return element

@@ -82,3 +82,13 @@ class RoomParticipantService:
 
         participant.left_at = datetime.now(timezone.utc)
         return await self.__repository.save(participant)
+    
+    async def count_participants(
+        self,
+        room_id: UUID,
+        filters: RoomParticipantFilters,
+    ) -> int:
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'room_id': room_id},
+        )

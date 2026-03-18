@@ -92,3 +92,11 @@ class ProjectService:
 
         relation = relations[0]
         return await self.__project_tag_repository.delete(relation.id)
+    
+    async def count_projects(self, filters: ProjectFilters) -> int:
+        return await self.__project_repository.count(filters=filters)
+
+
+    async def count_project_tags(self, project_id: UUID) -> int:
+        filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)
+        return await self.__project_tag_repository.count(filters=filters)

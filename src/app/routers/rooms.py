@@ -6,9 +6,12 @@ from fastapi import APIRouter, Query, Security
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import RoomServiceDep
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
+from src.app.models.room_participant import RoomParticipantPublic
 from src.app.models.user import User as UserModel
 from src.app.schemas.room_filters import RoomFilters
 from src.app.schemas.room_request import JoinRoomRequest
+from src.app.core.responses import auth_responses, conflict_responses, detail_responses
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/rooms',
@@ -16,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[Security(require_scoped_user, scopes=['rooms:read'])])
+@router.get('/', dependencies=[Security(require_scoped_user, scopes=['rooms:read'])], responses=auth_responses,)
 async def get_rooms(
     filters: Annotated[RoomFilters, Query()],
     room_service: RoomServiceDep,
@@ -24,7 +27,7 @@ async def get_rooms(
     return await room_service.get_rooms(filters)
 
 
-@router.post('/')
+@router.post('/', responses=auth_responses,)
 async def create_room(
     room_create: RoomCreate,
     room_service: RoomServiceDep,
@@ -36,7 +39,11 @@ async def create_room(
     return await room_service.create_room(room_create, current_user.id)
 
 
-@router.post('/join')
+@router.post('/join', responses={
+        **auth_responses,
+        **detail_responses,
+        **conflict_responses,
+    },)
 async def join_room(
     payload: JoinRoomRequest,
     room_service: RoomServiceDep,
@@ -44,11 +51,19 @@ async def join_room(
         UserModel,
         Security(require_scoped_user, scopes=['rooms:write']),
     ],
-):
-    return await room_service.join_room(payload, current_user.id)
+) -> RoomParticipantPublic:
+    participant = await room_service.join_room(payload, current_user.id)
+
+    if participant is None:
+        raise NotFoundError
+
+    return participant
 
 
-@router.put('/{room_id}')
+@router.put('/{room_id}', responses={
+        **auth_responses,
+        **detail_responses,
+    },)
 async def update_room(
     room_update: RoomUpdate,
     room_id: UUID,
@@ -57,11 +72,19 @@ async def update_room(
         UserModel,
         Security(require_scoped_user, scopes=['rooms:write']),
     ],
-) -> Optional[RoomPublic]:
-    return await room_service.update_room(room_update, room_id, current_user.id)
+) -> RoomPublic:
+    room = await room_service.update_room(room_update, room_id, current_user.id)
+
+    if room is None:
+        raise NotFoundError
+
+    return room
 
 
-@router.delete('/{room_id}')
+@router.delete('/{room_id}', responses={
+        **auth_responses,
+        **detail_responses,
+    },)
 async def end_room(
     room_id: UUID,
     room_service: RoomServiceDep,
@@ -69,5 +92,10 @@ async def end_room(
         UserModel,
         Security(require_scoped_user, scopes=['rooms:delete']),
     ],
-) -> Optional[RoomPublic]:
-    return await room_service.end_room(room_id, current_user.id)
+) -> RoomPublic:
+    room = await room_service.end_room(room_id, current_user.id)
+
+    if room is None:
+        raise NotFoundError
+
+    return room
