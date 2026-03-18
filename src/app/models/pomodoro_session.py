@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -37,10 +37,5 @@ class PomodoroSessionUpdate(PomodoroSessionBase):
 
 class PomodoroSession(PomodoroSessionPublic, table=True):
     __tablename__ = 'pomodoro_session'
-    id: int | None = Field(default=None, primary_key=True)
-    room_id: UUID = Field(foreign_key='room.id')
-    phase_ends_at: datetime | None = None
-    session_ends_at: datetime | None = None
-    last_updated_at: datetime | None = None
 
     room: 'Room' = Relationship(back_populates='pomodoro_sessions')
