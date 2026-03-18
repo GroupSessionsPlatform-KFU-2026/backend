@@ -42,17 +42,6 @@
 | DB_USER           | Имя пользователя в БД     | Строка                | postgres              |
 | DB_PASSWORD       | Пароль БД                 | Строка                | pass                  |
 | DB_NAME           | Название БД               | Строка                | db                    |
-| DEBUG             | Режим отладки             | Логический тип (bool) | -                     |
-| BASE_URL          | Базовый URL backend       | Строка                | —                     |
-| BASE_URL_FRONTEND | Базовый URL frontend      | Строка                | —                     |
-| SMTP_SERVER       | Хост SMTP-сервера         | Строка                | —                     |
-| SMTP_PORT         | Порт SMTP-сервера         | Число                 | —                     |
-| SMTP_USER         | Имя пользователя SMTP     | Строка                | —                     |
-| SMTP_PASSWORD     | Пароль SMTP               | Строка                | —                     |
-| JWT_SECRET        | Секретный ключ для JWT    | Строка                | —                     |
-| JWT_ALGORITHM     | Алгоритм подписи JWT      | Строка                | -                     |
-| JWT_TIME_EXP      | Время жизни JWT (секунды) | Число                 | -                     |
-
 
 ---
 

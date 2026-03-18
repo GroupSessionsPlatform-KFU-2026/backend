@@ -9,8 +9,9 @@
 #     is_active: bool
 
 from typing import TYPE_CHECKING
+from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -20,27 +21,24 @@ if TYPE_CHECKING:
 
 
 class ProjectTagBase(SQLModel):
-    is_active: bool = True
+    project_id: UUID
+    tag_id: UUID
 
 
 class ProjectTagPublic(BaseModel, ProjectTagBase):
-    id: int
+    is_active: bool
 
 
 class ProjectTagCreate(ProjectTagBase):
-    project_id: int
-    tag_id: int
+    pass
 
 
 class ProjectTagUpdate(ProjectTagBase):
-    is_active: bool | None = None
+    pass
 
 
 class ProjectTag(ProjectTagPublic, table=True):
     __tablename__ = 'project_tag'
-    id: int | None = Field(default=None, primary_key=True)
-    project_id: int = Field(foreign_key='project.id')
-    tag_id: int = Field(foreign_key='tag.id')
 
     project: 'Project' = Relationship(back_populates='tags')
     tag: 'Tag' = Relationship(back_populates='project_tags')

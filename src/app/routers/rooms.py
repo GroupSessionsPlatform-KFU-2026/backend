@@ -2,16 +2,17 @@ from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Query
+from pydantic import BaseModel
 
 from src.app.dependencies.services import RoomServiceDep
-from src.app.models.base import BaseModel
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
-from src.app.models.room_participant import RoomParticipantPublic
 from src.app.schemas.room_filters import RoomFilters
 
 
+# This class DTO where I should move? schemes/models?
 class JoinRoomRequest(BaseModel):
     room_code: str
+    user_id: UUID
 
 
 router = APIRouter(
@@ -33,16 +34,15 @@ async def create_room(
     room_create: RoomCreate,
     room_service: RoomServiceDep,
 ) -> RoomPublic:
-    # temporal: luego creator_id viene del auth
-    return await room_service.create_room(1, room_create)
+    return await room_service.create_room(room_create)
 
 
 @router.post('/join')
 async def join_room(
     payload: JoinRoomRequest,
     room_service: RoomServiceDep,
-) -> Optional[RoomParticipantPublic]:
-    return await room_service.join_room(payload.room_code, 1)
+):
+    return await room_service.join_room(payload)
 
 
 @router.get('/{room_id}')

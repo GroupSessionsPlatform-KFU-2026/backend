@@ -1,4 +1,5 @@
 from typing import Optional, Sequence
+from uuid import UUID
 
 from src.app.dependencies.repositories import (
     ProjectRepository,
@@ -36,29 +37,28 @@ class ProjectService:
             limit=filters.limit,
         )
 
-    async def create_project(
-        self, owner_id: int, project_create: ProjectCreate
-    ) -> Project:
+    # We should change when will have auth
+    async def create_project(self, project_create: ProjectCreate) -> Project:
         project_dump = project_create.model_dump()
-        project = Project(**project_dump, owner_id=owner_id, is_archived=False)
+        project = Project(**project_dump, is_archived=False)
         return await self.__project_repository.save(project)
 
-    async def get_project(self, project_id: int) -> Optional[Project]:
+    async def get_project(self, project_id: UUID) -> Optional[Project]:
         return await self.__project_repository.get(project_id)
 
     async def update_project(
-        self, project_update: ProjectUpdate, project_id: int
+        self, project_update: ProjectUpdate, project_id: UUID
     ) -> Optional[Project]:
         return await self.__project_repository.update(project_id, project_update)
 
-    async def archive_project(self, project_id: int) -> Optional[Project]:
+    async def archive_project(self, project_id: UUID) -> Optional[Project]:
         project = await self.__project_repository.get(project_id)
         if project is None:
             return None
         project.is_archived = True
         return await self.__project_repository.save(project)
 
-    async def get_project_tags(self, project_id: int) -> Sequence[ProjectTag]:
+    async def get_project_tags(self, project_id: UUID) -> Sequence[ProjectTag]:
         filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)
         return await self.__project_tag_repository.fetch(
             filters=filters,
@@ -66,14 +66,14 @@ class ProjectService:
             limit=filters.limit,
         )
 
-    async def assign_tag_to_project(self, project_id: int, tag_id: int) -> ProjectTag:
+    async def assign_tag_to_project(self, project_id: UUID, tag_id: UUID) -> ProjectTag:
         project_tag = ProjectTag(project_id=project_id, tag_id=tag_id, is_active=True)
         return await self.__project_tag_repository.save(project_tag)
 
     async def remove_tag_from_project(
         self,
-        project_id: int,
-        tag_id: int,
+        project_id: UUID,
+        tag_id: UUID,
     ) -> Optional[ProjectTag]:
         filters = ProjectTagFilters(
             project_id=project_id,

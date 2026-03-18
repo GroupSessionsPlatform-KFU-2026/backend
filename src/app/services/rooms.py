@@ -1,3 +1,5 @@
+import secrets
+import string
 from typing import Optional, Sequence
 from uuid import UUID
 
@@ -9,7 +11,13 @@ from src.app.dependencies.repositories import (
 )
 from src.app.models.room import Room, RoomCreate, RoomUpdate
 from src.app.models.room_participant import RoomParticipant
+from src.app.routers.rooms import JoinRoomRequest
 from src.app.schemas.room_filters import RoomFilters
+
+
+def generate_room_code(length: int = 6) -> str:
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 class RoomService:
@@ -31,11 +39,12 @@ class RoomService:
             limit=filters.limit,
         )
 
-    async def create_room(self, creator_id: int, room_create: RoomCreate) -> Room:
+    # We should change when will have auth
+    async def create_room(self, room_create: RoomCreate) -> Room:
         room_dump = room_create.model_dump()
         room = Room(
             **room_dump,
-            creator_id=creator_id,
+            room_code=generate_room_code(),
             status='active',
         )
         return await self.__room_repository.save(room)
@@ -55,11 +64,9 @@ class RoomService:
         room.status = 'ended'
         return await self.__room_repository.save(room)
 
-    async def join_room(
-        self, room_code: str, user_id: int
-    ) -> Optional[RoomParticipant]:
-
-        filters = RoomFilters(room_code=room_code, offset=0, limit=1)
+    # We must change when will be auth
+    async def join_room(self, payload: JoinRoomRequest) -> Optional[RoomParticipant]:
+        filters = RoomFilters(room_code=payload.room_code, offset=0, limit=1)
         rooms = await self.__room_repository.fetch(
             filters=filters,
             offset=filters.offset,
@@ -73,7 +80,7 @@ class RoomService:
 
         participant = RoomParticipant(
             room_id=room.id,
-            user_id=user_id,
+            user_id=payload.user_id,
             role='participant',
             is_kicked=False,
         )

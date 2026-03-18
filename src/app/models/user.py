@@ -32,11 +32,11 @@ class UserBase(SQLModel):
     email: str = Field(index=True)
     username: str = Field(index=True)
     avatar_url: str | None = None
-    is_active: bool = True
 
 
 class UserPublic(BaseModel, UserBase):
-    id: int
+    last_login_at: datetime | None = None
+    is_active: bool
 
 
 class UserCreate(UserBase):
@@ -52,9 +52,7 @@ class UserUpdate(UserBase):
 
 class User(UserPublic, table=True):
     __tablename__ = 'user'
-    id: int | None = Field(default=None, primary_key=True)
     password_hash: str
-    last_login_at: datetime | None = None
 
     projects: list['Project'] = Relationship(back_populates='owner')
     created_rooms: list['Room'] = Relationship(back_populates='creator')

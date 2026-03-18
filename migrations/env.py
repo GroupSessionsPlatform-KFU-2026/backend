@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from src.app.db.engine import form_db_url
-from src.app.models import BaseModel
+from src.app.models.base import BaseModel
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'src'))
 

@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter
 
@@ -11,15 +12,9 @@ router = APIRouter(
 )
 
 
-@router.get('/me')
-async def get_me(user_service: UserServiceDep) -> Optional[UserPublic]:
-    # temporal: luego reemplazas por current_user real desde auth
-    return await user_service.get_me(1)
-
-
 @router.get('/{user_id}')
 async def get_user(
     user_service: UserServiceDep,
-    user_id: int,
+    user_id: UUID,
 ) -> Optional[UserPublic]:
     return await user_service.get_user(user_id)
