@@ -2,18 +2,11 @@ from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
 
 from src.app.dependencies.services import RoomServiceDep
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
 from src.app.schemas.room_filters import RoomFilters
-
-
-# This class DTO where I should move? schemes/models?
-class JoinRoomRequest(BaseModel):
-    room_code: str
-    user_id: UUID
-
+from src.app.schemas.room_request import JoinRoomRequest
 
 router = APIRouter(
     prefix='/rooms',
