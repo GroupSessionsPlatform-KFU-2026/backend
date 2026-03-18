@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 
 from src.app.dependencies.services import RoomServiceDep
-from src.app.models import BaseModel
+from src.app.models.base import BaseModel
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
 from src.app.models.room_participant import RoomParticipantPublic
 from src.app.schemas.room_filters import RoomFilters
