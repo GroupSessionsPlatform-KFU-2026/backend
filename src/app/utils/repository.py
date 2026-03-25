@@ -62,6 +62,21 @@ class Repository[Model: BaseModel]:
         entities = await self.__session.exec(select_statement)
         return entities.all()
 
+    async def count(self, filters: Optional[PydanticBaseModel] = None) -> int:
+        return len(await self.fetch(filters=filters))
+
+    async def get_one_by_filters(
+        self,
+        filters: PydanticBaseModel,
+    ) -> Optional[Model]:
+        entities = await self.fetch(filters=filters, offset=0, limit=1)
+        if not entities:
+            return None
+        return entities[0]
+
+    async def exists_by_filters(self, filters: PydanticBaseModel) -> bool:
+        return await self.get_one_by_filters(filters) is not None
+
     async def save(self, instance: Model) -> Model:
         self.__session.add(instance)
         await self.__session.commit()

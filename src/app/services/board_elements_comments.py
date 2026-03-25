@@ -10,7 +10,7 @@ from src.app.models.board_element_comment import (
     BoardElementCommentCreate,
     BoardElementCommentUpdate,
 )
-from src.app.schemas.board_element_comment_filters import BoardCommentFilters
+from src.app.schemas.board_element_comment_filters import BoardElementCommentFilters
 
 
 class BoardElementCommentService:
@@ -20,7 +20,7 @@ class BoardElementCommentService:
         self.__repository = repository
 
     async def get_comments(
-        self, filters: BoardCommentFilters
+        self, filters: BoardElementCommentFilters
     ) -> Sequence[BoardElementComment]:
         return await self.__repository.fetch(
             filters=filters,
@@ -43,9 +43,7 @@ class BoardElementCommentService:
     ) -> Optional[BoardElementComment]:
         return await self.__repository.update(comment_id, comment_update)
 
-    async def delete_comment(
-        self, comment_id: UUID
-    ) -> Optional[BoardElementComment]:
+    async def delete_comment(self, comment_id: UUID) -> Optional[BoardElementComment]:
         comment = await self.__repository.get(comment_id)
         if comment is None:
             return None

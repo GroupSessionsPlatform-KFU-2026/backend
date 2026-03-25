@@ -27,8 +27,13 @@ class TagService:
         tag = Tag(**tag_dump)
         return await self.__repository.save(tag)
 
+    async def get_tag(self, tag_id: UUID) -> Optional[Tag]:
+        return await self.__repository.get(tag_id)
+
     async def update_tag(
-        self, tag_update: TagUpdate, tag_id: UUID
+        self,
+        tag_update: TagUpdate,
+        tag_id: UUID,
     ) -> Optional[Tag]:
         return await self.__repository.update(tag_id, tag_update)
 

@@ -11,6 +11,8 @@ router = APIRouter(
     tags=['users'],
 )
 
+# TODO:user/me because we dont have auth
+
 
 @router.get('/{user_id}')
 async def get_user(
