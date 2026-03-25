@@ -248,7 +248,8 @@ paths:
           in: query
           description: Filter by project owner
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: is_archived
           in: query
           description: Filter by archive status
@@ -258,7 +259,8 @@ paths:
           in: query
           description: Filter by assigned tag
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: ordering
           in: query
           description: Sort field
@@ -834,12 +836,14 @@ paths:
           in: query
           description: Filter by project id
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: creator_id
           in: query
           description: Filter by creator id
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: status
           in: query
           description: Filter by room status
@@ -1383,7 +1387,8 @@ paths:
           in: query
           description: Filter by sender
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: sent_after
           in: query
           description: Filter messages sent after this datetime
@@ -1632,7 +1637,8 @@ paths:
           in: query
           description: Filter by element author
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: element_type
           in: query
           description: Filter by board element type
@@ -1925,7 +1931,8 @@ paths:
           in: query
           description: Filter by author id
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: is_deleted
           in: query
           description: Filter by deletion status
@@ -2482,7 +2489,8 @@ components:
       required: true
       description: User identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
     ProjectIdParam:
       name: project_id
@@ -2490,7 +2498,8 @@ components:
       required: true
       description: Project identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
     TagIdParam:
       name: tag_id
@@ -2498,7 +2507,8 @@ components:
       required: true
       description: Tag identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
     RoomIdParam:
       name: room_id
@@ -2515,7 +2525,8 @@ components:
       required: true
       description: Message identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
     ElementIdParam:
       name: element_id
@@ -2523,7 +2534,8 @@ components:
       required: true
       description: Board element identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
     CommentIdParam:
       name: comment_id
@@ -2531,7 +2543,8 @@ components:
       required: true
       description: Comment identifier
       schema:
-        type: integer
+        type: string
+        format: uuid
 
   schemas:
     ErrorResponse:
@@ -2619,8 +2632,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
         email:
           type: string
           format: email
@@ -2674,11 +2688,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 10
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
         owner_id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
         title:
           type: string
           example: Math Study Group
@@ -2720,21 +2736,25 @@ components:
       required: [tag_id]
       properties:
         tag_id:
-          type: integer
-          example: 3
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440010
 
     ProjectTagResponse:
       type: object
       properties:
         id:
-          type: integer
-          example: 5
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440011
         project_id:
-          type: integer
-          example: 10
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
         tag_id:
-          type: integer
-          example: 3
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440010
         created_at:
           type: string
           format: date-time
@@ -2764,8 +2784,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 3
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440010
         name:
           type: string
           example: urgent
@@ -2800,8 +2821,9 @@ components:
       required: [project_id, title, max_participants]
       properties:
         project_id:
-          type: integer
-          example: 10
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
         title:
           type: string
           maxLength: 255
@@ -2841,12 +2863,15 @@ components:
         id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440020
         project_id:
-          type: integer
-          example: 10
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
         creator_id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
         title:
           type: string
           example: Physics Session
@@ -2887,14 +2912,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 7
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440030
         room_id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440020
         user_id:
-          type: integer
-          example: 2
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440002
         role:
           type: string
           enum: [owner, moderator, participant]
@@ -2956,14 +2984,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 100
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440040
         room_id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440020
         sender_id:
-          type: integer
-          example: 2
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440002
         content:
           type: string
           example: Hello everyone
@@ -3019,14 +3050,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 55
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440050
         room_id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440020
         author_id:
-          type: integer
-          example: 2
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440002
         element_type:
           type: string
           enum: [brush, eraser, marker, shape, text]
@@ -3082,14 +3116,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 8
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440060
         board_element_id:
-          type: integer
-          example: 55
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440050
         author_id:
-          type: integer
-          example: 3
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440003
         content:
           type: string
           example: We should improve this section
@@ -3140,11 +3177,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440070
         room_id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440020
         work_duration:
           type: integer
           example: 25
