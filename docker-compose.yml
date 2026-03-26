@@ -1,0 +1,13 @@
+services:
+  myDB:
+    image: postgres:15.3
+    container_name: group_session_platform
+    restart: always
+    ports:
+      - 5444:5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=group_session_platform
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
