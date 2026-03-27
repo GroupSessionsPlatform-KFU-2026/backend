@@ -4,7 +4,10 @@ from uuid import UUID
 from src.app.dependencies.repositories import (
     BoardElementCommentRepository,
     BoardElementCommentRepositoryDep,
+    BoardElementRepository,
+    BoardElementRepositoryDep,
 )
+from src.app.models.board_element import BoardElement
 from src.app.models.board_element_comment import (
     BoardElementComment,
     BoardElementCommentCreate,
@@ -15,31 +18,58 @@ from src.app.schemas.board_element_comment_filters import BoardElementCommentFil
 
 class BoardElementCommentService:
     __repository: BoardElementCommentRepository
+    __board_element_repository: BoardElementRepository
 
-    def __init__(self, repository: BoardElementCommentRepositoryDep):
+    def __init__(
+        self,
+        repository: BoardElementCommentRepositoryDep,
+        board_element_repository: BoardElementRepositoryDep,
+    ):
         self.__repository = repository
+        self.__board_element_repository = board_element_repository
+
+    async def get_room_element(
+        self,
+        room_id: UUID,
+        element_id: UUID,
+    ) -> Optional[BoardElement]:
+        elements = await self.__board_element_repository.fetch(
+            room_id=room_id,
+            id=element_id,
+            limit=1,
+        )
+        return elements[0] if elements else None
 
     async def get_comments(
         self,
+        room_id: UUID,
         element_id: UUID,
         filters: BoardElementCommentFilters,
     ) -> Sequence[BoardElementComment]:
-        comments = await self.__repository.fetch(
+        element = await self.get_room_element(room_id, element_id)
+        if element is None:
+            return []
+
+        return await self.__repository.fetch(
             filters=filters,
+            board_element_id=element_id,
             offset=filters.offset,
             limit=filters.limit,
         )
-        return [
-            comment for comment in comments if comment.board_element_id == element_id
-        ]
 
     async def create_comment(
         self,
+        room_id: UUID,
         element_id: UUID,
         comment_create: BoardElementCommentCreate,
-    ) -> BoardElementComment:
+    ) -> Optional[BoardElementComment]:
+        element = await self.get_room_element(room_id, element_id)
+        if element is None:
+            return None
+
+        comment_dump = comment_create.model_dump()
         comment = BoardElementComment(
-            **comment_create.model_dump(),
+            **comment_dump,
             board_element_id=element_id,
             is_deleted=False,
         )
@@ -47,38 +77,41 @@ class BoardElementCommentService:
 
     async def get_comment_in_element(
         self,
+        room_id: UUID,
         element_id: UUID,
         comment_id: UUID,
     ) -> Optional[BoardElementComment]:
-        comment = await self.__repository.get(comment_id)
-        if comment is None:
+        element = await self.get_room_element(room_id, element_id)
+        if element is None:
             return None
-        if comment.board_element_id != element_id:
-            return None
-        return comment
+
+        comments = await self.__repository.fetch(
+            id=comment_id,
+            board_element_id=element_id,
+            limit=1,
+        )
+        return comments[0] if comments else None
 
     async def update_comment(
         self,
+        room_id: UUID,
         element_id: UUID,
         comment_id: UUID,
         comment_update: BoardElementCommentUpdate,
     ) -> Optional[BoardElementComment]:
-        comment = await self.__repository.get(comment_id)
+        comment = await self.get_comment_in_element(room_id, element_id, comment_id)
         if comment is None:
             return None
-        if comment.board_element_id != element_id:
-            return None
-        return await self.__repository.update(comment_id, comment_update)
+        return await self.__repository.update(comment.id, comment_update)
 
     async def delete_comment(
         self,
+        room_id: UUID,
         element_id: UUID,
         comment_id: UUID,
     ) -> Optional[BoardElementComment]:
-        comment = await self.__repository.get(comment_id)
+        comment = await self.get_comment_in_element(room_id, element_id, comment_id)
         if comment is None:
-            return None
-        if comment.board_element_id != element_id:
             return None
 
         comment.is_deleted = True

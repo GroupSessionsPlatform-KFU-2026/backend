@@ -25,17 +25,12 @@ class ChatMessageService:
         room_id: UUID,
         filters: ChatMessageFilters,
     ) -> Sequence[ChatMessage]:
-        repository_filters = ChatMessageFilters(
-            sender_id=filters.sender_id,
+        return await self.__repository.fetch(
+            filters=filters,
+            room_id=room_id,
             offset=filters.offset,
             limit=filters.limit,
         )
-        messages = await self.__repository.fetch(
-            filters=repository_filters,
-            offset=repository_filters.offset,
-            limit=repository_filters.limit,
-        )
-        return [message for message in messages if message.room_id == room_id]
 
     async def create_message(
         self,
@@ -46,11 +41,11 @@ class ChatMessageService:
         message = ChatMessage(
             **message_dump,
             room_id=room_id,
-            sent_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
             is_edited=False,
         )
-        # TODO: sender_id should come from the current authenticated user
-        #  after OAuth2 is implemented.
+        # TODO: sender_id should come from the current authenticated
+        #  user after OAuth2 is implemented.
         return await self.__repository.save(message)
 
     async def get_message_in_room(
@@ -58,12 +53,12 @@ class ChatMessageService:
         room_id: UUID,
         message_id: UUID,
     ) -> Optional[ChatMessage]:
-        message = await self.__repository.get(message_id)
-        if message is None:
-            return None
-        if message.room_id != room_id:
-            return None
-        return message
+        messages = await self.__repository.fetch(
+            id=message_id,
+            room_id=room_id,
+            limit=1,
+        )
+        return messages[0] if messages else None
 
     async def update_message(
         self,
@@ -71,10 +66,8 @@ class ChatMessageService:
         message_id: UUID,
         message_update: ChatMessageUpdate,
     ) -> Optional[ChatMessage]:
-        message = await self.__repository.get(message_id)
+        message = await self.get_message_in_room(room_id, message_id)
         if message is None:
-            return None
-        if message.room_id != room_id:
             return None
 
         message.content = message_update.content
@@ -86,9 +79,7 @@ class ChatMessageService:
         room_id: UUID,
         message_id: UUID,
     ) -> Optional[ChatMessage]:
-        message = await self.__repository.get(message_id)
+        message = await self.get_message_in_room(room_id, message_id)
         if message is None:
             return None
-        if message.room_id != room_id:
-            return None
-        return await self.__repository.delete(message_id)
+        return await self.__repository.delete(message.id)

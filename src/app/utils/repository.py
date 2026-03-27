@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 from uuid import UUID
 
 from generics import get_filled_type
@@ -35,23 +35,29 @@ class Repository[Model: BaseModel]:
         filters: Optional[PydanticBaseModel] = None,
         offset: Optional[int] = None,
         limit: Optional[int] = None,
+        **extra_filters: Any,
     ) -> Sequence[Model]:
         select_statement = select(self.model)
+        filter_statement = and_(True)
 
+        filters_dict: dict[str, Any] = {}
         if filters is not None:
-            filter_statement = and_(True)
-            filters_dict = filters.model_dump(exclude_unset=True)
+            filters_dict.update(filters.model_dump(exclude_unset=True))
 
-            for key, value in filters_dict.items():
-                if not hasattr(self.model, key):
-                    continue
-                if value is not None:
-                    filter_statement = and_(
-                        filter_statement,
-                        getattr(self.model, key) == value,
-                    )
+        filters_dict.update(extra_filters)
 
-            select_statement = select_statement.where(filter_statement)
+        for key, value in filters_dict.items():
+            if key in {'offset', 'limit'}:
+                continue
+            if not hasattr(self.model, key):
+                continue
+            if value is not None:
+                filter_statement = and_(
+                    filter_statement,
+                    getattr(self.model, key) == value,
+                )
+
+        select_statement = select_statement.where(filter_statement)
 
         if offset is not None:
             select_statement = select_statement.offset(offset)
@@ -69,7 +75,7 @@ class Repository[Model: BaseModel]:
         self,
         filters: PydanticBaseModel,
     ) -> Optional[Model]:
-        entities = await self.fetch(filters=filters, offset=0, limit=1)
+        entities = await self.fetch(filters=filters, limit=1)
         if not entities:
             return None
         return entities[0]

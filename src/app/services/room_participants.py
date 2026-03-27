@@ -25,23 +25,12 @@ class RoomParticipantService:
         room_id: UUID,
         filters: RoomParticipantFilters,
     ) -> Sequence[RoomParticipant]:
-        repository_filters = RoomParticipantFilters(
-            user_id=filters.user_id,
-            role=filters.role,
-            is_kicked=filters.is_kicked,
+        return await self.__repository.fetch(
+            filters=filters,
+            room_id=room_id,
             offset=filters.offset,
             limit=filters.limit,
         )
-        participants = await self.__repository.fetch(
-            filters=repository_filters,
-            offset=repository_filters.offset,
-            limit=repository_filters.limit,
-        )
-        return [
-            participant
-            for participant in participants
-            if participant.room_id == room_id
-        ]
 
     async def create_participant(
         self,
@@ -62,21 +51,12 @@ class RoomParticipantService:
         room_id: UUID,
         user_id: UUID,
     ) -> Optional[RoomParticipant]:
-        filters = RoomParticipantFilters(
-            user_id=user_id,
-            offset=0,
-            limit=100,
-        )
         participants = await self.__repository.fetch(
-            filters=filters,
-            offset=filters.offset,
-            limit=filters.limit,
+            room_id=room_id,
+            user_id=user_id,
+            limit=1,
         )
-
-        for participant in participants:
-            if participant.room_id == room_id:
-                return participant
-        return None
+        return participants[0] if participants else None
 
     async def update_participant(
         self,

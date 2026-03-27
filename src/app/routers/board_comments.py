@@ -24,8 +24,7 @@ async def get_board_element_comments(
     comment_service: BoardElementCommentServiceDep,
     filters: Annotated[BoardElementCommentFilters, Query()],
 ) -> Sequence[BoardElementCommentPublic]:
-    _ = room_id
-    return await comment_service.get_comments(element_id, filters)
+    return await comment_service.get_comments(room_id, element_id, filters)
 
 
 @router.post('/')
@@ -34,11 +33,10 @@ async def create_board_element_comment(
     element_id: UUID,
     comment_create: BoardElementCommentCreate,
     comment_service: BoardElementCommentServiceDep,
-) -> BoardElementCommentPublic:
-    _ = room_id
+) -> Optional[BoardElementCommentPublic]:
     # TODO: author_id should come from the current authenticated
     #  user after OAuth2 is implemented.
-    return await comment_service.create_comment(element_id, comment_create)
+    return await comment_service.create_comment(room_id, element_id, comment_create)
 
 
 @router.put('/{comment_id}')
@@ -49,9 +47,9 @@ async def update_board_element_comment(
     comment_update: BoardElementCommentUpdate,
     comment_service: BoardElementCommentServiceDep,
 ) -> Optional[BoardElementCommentPublic]:
-    _ = room_id
     # TODO: validate comment ownership after OAuth2 is implemented.
     return await comment_service.update_comment(
+        room_id,
         element_id,
         comment_id,
         comment_update,
@@ -65,6 +63,5 @@ async def delete_board_element_comment(
     comment_id: UUID,
     comment_service: BoardElementCommentServiceDep,
 ) -> Optional[BoardElementCommentPublic]:
-    _ = room_id
     # TODO: validate comment ownership after OAuth2 is implemented.
-    return await comment_service.delete_comment(element_id, comment_id)
+    return await comment_service.delete_comment(room_id, element_id, comment_id)

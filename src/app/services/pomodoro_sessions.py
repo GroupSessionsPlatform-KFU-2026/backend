@@ -55,11 +55,9 @@ class PomodoroSessionService:
         self,
         room_id: UUID,
     ) -> Optional[PomodoroSession]:
-        filters = PomodoroSessionFilter(room_id=room_id, offset=0, limit=1)
         sessions = await self.__repository.fetch(
-            filters=filters,
-            offset=filters.offset,
-            limit=filters.limit,
+            room_id=room_id,
+            limit=1,
         )
         return sessions[0] if sessions else None
 
@@ -79,9 +77,17 @@ class PomodoroSessionService:
             return None
 
         now = datetime.now(timezone.utc)
+
+        if session.current_phase == 'short_break':
+            duration = session.short_break_duration
+        elif session.current_phase == 'long_break':
+            duration = session.long_break_duration
+        else:
+            session.current_phase = 'work'
+            duration = session.work_duration
+
         session.is_running = True
-        session.current_phase = 'work'
-        session.phase_ends_at = now + timedelta(minutes=session.work_duration)
+        session.phase_ends_at = now + timedelta(minutes=duration)
         return await self.__repository.save(session)
 
     async def pause_pomodoro(
@@ -93,7 +99,6 @@ class PomodoroSessionService:
             return None
 
         session.is_running = False
-        session.current_phase = 'paused'
         return await self.__repository.save(session)
 
     async def reset_pomodoro(
