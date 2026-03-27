@@ -13,7 +13,6 @@ class BoardElementType(str, Enum):
 
 
 class BoardElementFilters(CommonListFilters):
-    room_id: UUID | None = None
     author_id: UUID | None = None
     element_type: BoardElementType | None = None
     is_deleted: bool | None = None

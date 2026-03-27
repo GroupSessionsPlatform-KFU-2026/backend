@@ -23,8 +23,7 @@ async def get_room_messages(
     chat_service: ChatMessageServiceDep,
     filters: Annotated[ChatMessageFilters, Query()],
 ) -> Sequence[ChatMessagePublic]:
-    filters.room_id = room_id
-    return await chat_service.get_messages(filters)
+    return await chat_service.get_messages(room_id, filters)
 
 
 @router.post('/')
@@ -33,27 +32,27 @@ async def create_message(
     message_create: ChatMessageCreate,
     chat_service: ChatMessageServiceDep,
 ) -> ChatMessagePublic:
-    payload = message_create.model_copy(update={'room_id': room_id})
-    # TODO: sender_id should come from OAuth current user later.
-    return await chat_service.create_message(payload)
+    # TODO: sender_id should come from the current authenticated
+    #  user after OAuth2 is implemented.
+    return await chat_service.create_message(room_id, message_create)
 
 
 @router.put('/{message_id}')
 async def update_message(
-    # room_id: UUID,
+    room_id: UUID,
     message_id: UUID,
     message_update: ChatMessageUpdate,
     chat_service: ChatMessageServiceDep,
 ) -> Optional[ChatMessagePublic]:
-    # TODO: validate message ownership after auth is implemented.
-    return await chat_service.update_message(message_update, message_id)
+    # TODO: validate message ownership inside the room after OAuth2 is implemented.
+    return await chat_service.update_message(room_id, message_id, message_update)
 
 
 @router.delete('/{message_id}')
 async def delete_message(
-    # room_id: UUID,
+    room_id: UUID,
     message_id: UUID,
     chat_service: ChatMessageServiceDep,
 ) -> Optional[ChatMessagePublic]:
-    # TODO: validate message ownership after auth is implemented.
-    return await chat_service.delete_message(message_id)
+    # TODO: validate message ownership inside the room after OAuth2 is implemented.
+    return await chat_service.delete_message(room_id, message_id)

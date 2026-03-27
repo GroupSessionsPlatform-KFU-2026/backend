@@ -21,52 +21,70 @@ class BoardElementService:
 
     async def get_elements(
         self,
+        room_id: UUID,
         filters: BoardElementFilters,
     ) -> Sequence[BoardElement]:
-        return await self.__repository.fetch(
-            filters=filters,
+        repository_filters = BoardElementFilters(
+            author_id=filters.author_id,
+            element_type=filters.element_type,
+            is_deleted=filters.is_deleted,
             offset=filters.offset,
             limit=filters.limit,
         )
+        elements = await self.__repository.fetch(
+            filters=repository_filters,
+            offset=repository_filters.offset,
+            limit=repository_filters.limit,
+        )
+        return [element for element in elements if element.room_id == room_id]
 
     async def get_element_in_room(
         self,
         room_id: UUID,
         element_id: UUID,
     ) -> Optional[BoardElement]:
-        filters = BoardElementFilters(room_id=room_id, offset=0, limit=100)
-        elements = await self.__repository.fetch(
-            filters=filters,
-            offset=filters.offset,
-            limit=filters.limit,
-        )
-
-        for element in elements:
-            if element.id == element_id:
-                return element
-        return None
+        element = await self.__repository.get(element_id)
+        if element is None:
+            return None
+        if element.room_id != room_id:
+            return None
+        return element
 
     async def create_element(
         self,
+        room_id: UUID,
         element_create: BoardElementCreate,
     ) -> BoardElement:
         element_dump = element_create.model_dump()
-        element = BoardElement(**element_dump, is_deleted=False)
+        element = BoardElement(
+            **element_dump,
+            room_id=room_id,
+            is_deleted=False,
+        )
         return await self.__repository.save(element)
 
     async def update_element(
         self,
-        element_update: BoardElementUpdate,
+        room_id: UUID,
         element_id: UUID,
+        element_update: BoardElementUpdate,
     ) -> Optional[BoardElement]:
+        element = await self.__repository.get(element_id)
+        if element is None:
+            return None
+        if element.room_id != room_id:
+            return None
         return await self.__repository.update(element_id, element_update)
 
     async def delete_element(
         self,
+        room_id: UUID,
         element_id: UUID,
     ) -> Optional[BoardElement]:
         element = await self.__repository.get(element_id)
         if element is None:
+            return None
+        if element.room_id != room_id:
             return None
 
         element.is_deleted = True

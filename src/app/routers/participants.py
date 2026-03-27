@@ -19,29 +19,29 @@ async def get_room_participants(
     participant_service: RoomParticipantServiceDep,
     filters: Annotated[RoomParticipantFilters, Query()],
 ) -> Sequence[RoomParticipantPublic]:
-    filters.room_id = room_id
-    return await participant_service.get_participants(filters)
+    return await participant_service.get_participants(room_id, filters)
 
 
 @router.patch('/{user_id}')
 async def update_participant(
-    # room_id: UUID,
+    room_id: UUID,
     user_id: UUID,
     participant_update: RoomParticipantUpdate,
     participant_service: RoomParticipantServiceDep,
 ) -> Optional[RoomParticipantPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
+    # TODO: validate room moderation permissions after OAuth2 is implemented.
     return await participant_service.update_participant(
-        participant_update,
+        room_id,
         user_id,
+        participant_update,
     )
 
 
-@router.delete('/{user_id')
+@router.delete('/{user_id}')
 async def remove_participant(
-    # room_id: UUID,
+    room_id: UUID,
     user_id: UUID,
     participant_service: RoomParticipantServiceDep,
 ) -> Optional[RoomParticipantPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
-    return await participant_service.remove_participant(user_id)
+    # TODO: validate room moderation permissions after OAuth2 is implemented.
+    return await participant_service.remove_participant(room_id, user_id)

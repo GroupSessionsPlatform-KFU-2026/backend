@@ -20,32 +20,65 @@ class BoardElementCommentService:
         self.__repository = repository
 
     async def get_comments(
-        self, filters: BoardElementCommentFilters
+        self,
+        element_id: UUID,
+        filters: BoardElementCommentFilters,
     ) -> Sequence[BoardElementComment]:
-        return await self.__repository.fetch(
+        comments = await self.__repository.fetch(
             filters=filters,
             offset=filters.offset,
             limit=filters.limit,
         )
+        return [
+            comment for comment in comments if comment.board_element_id == element_id
+        ]
 
     async def create_comment(
-        self, comment_create: BoardElementCommentCreate
+        self,
+        element_id: UUID,
+        comment_create: BoardElementCommentCreate,
     ) -> BoardElementComment:
-        comment_dump = comment_create.model_dump()
         comment = BoardElementComment(
-            **comment_dump,
+            **comment_create.model_dump(),
+            board_element_id=element_id,
             is_deleted=False,
         )
         return await self.__repository.save(comment)
 
-    async def update_comment(
-        self, comment_update: BoardElementCommentUpdate, comment_id: UUID
+    async def get_comment_in_element(
+        self,
+        element_id: UUID,
+        comment_id: UUID,
     ) -> Optional[BoardElementComment]:
-        return await self.__repository.update(comment_id, comment_update)
-
-    async def delete_comment(self, comment_id: UUID) -> Optional[BoardElementComment]:
         comment = await self.__repository.get(comment_id)
         if comment is None:
+            return None
+        if comment.board_element_id != element_id:
+            return None
+        return comment
+
+    async def update_comment(
+        self,
+        element_id: UUID,
+        comment_id: UUID,
+        comment_update: BoardElementCommentUpdate,
+    ) -> Optional[BoardElementComment]:
+        comment = await self.__repository.get(comment_id)
+        if comment is None:
+            return None
+        if comment.board_element_id != element_id:
+            return None
+        return await self.__repository.update(comment_id, comment_update)
+
+    async def delete_comment(
+        self,
+        element_id: UUID,
+        comment_id: UUID,
+    ) -> Optional[BoardElementComment]:
+        comment = await self.__repository.get(comment_id)
+        if comment is None:
+            return None
+        if comment.board_element_id != element_id:
             return None
 
         comment.is_deleted = True

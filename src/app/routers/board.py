@@ -23,8 +23,7 @@ async def get_board_elements(
     board_service: BoardElementServiceDep,
     filters: Annotated[BoardElementFilters, Query()],
 ) -> Sequence[BoardElementPublic]:
-    filters.room_id = room_id
-    return await board_service.get_elements(filters)
+    return await board_service.get_elements(room_id, filters)
 
 
 @router.post('/')
@@ -33,9 +32,9 @@ async def create_board_element(
     element_create: BoardElementCreate,
     board_service: BoardElementServiceDep,
 ) -> BoardElementPublic:
-    payload = element_create.model_copy(update={'room_id': room_id})
-    # TODO: author_id should come from OAuth current user later.
-    return await board_service.create_element(payload)
+    # TODO: author_id should come from the current authenticated
+    #  user after OAuth2 is implemented.
+    return await board_service.create_element(room_id, element_create)
 
 
 @router.get('/{element_id}')
@@ -49,20 +48,20 @@ async def get_board_element(
 
 @router.put('/{element_id}')
 async def update_board_element(
-    # room_id: UUID,
+    room_id: UUID,
     element_id: UUID,
     element_update: BoardElementUpdate,
     board_service: BoardElementServiceDep,
 ) -> Optional[BoardElementPublic]:
-    # TODO: validate ownership after auth is implemented.
-    return await board_service.update_element(element_update, element_id)
+    # TODO: validate room-scoped ownership after OAuth2 is implemented.
+    return await board_service.update_element(room_id, element_id, element_update)
 
 
 @router.delete('/{element_id}')
 async def delete_board_element(
-    # room_id: UUID,
+    room_id: UUID,
     element_id: UUID,
     board_service: BoardElementServiceDep,
 ) -> Optional[BoardElementPublic]:
-    # TODO: validate ownership after auth is implemented.
-    return await board_service.delete_element(element_id)
+    # TODO: validate room-scoped ownership after OAuth2 is implemented.
+    return await board_service.delete_element(room_id, element_id)

@@ -19,45 +19,52 @@ router = APIRouter(
 
 @router.get('/')
 async def get_board_element_comments(
-    # room_id: UUID,
+    room_id: UUID,
     element_id: UUID,
     comment_service: BoardElementCommentServiceDep,
     filters: Annotated[BoardElementCommentFilters, Query()],
 ) -> Sequence[BoardElementCommentPublic]:
-    filters.board_element_id = element_id
-    return await comment_service.get_comments(filters)
+    _ = room_id
+    return await comment_service.get_comments(element_id, filters)
 
 
 @router.post('/')
 async def create_board_element_comment(
-    # room_id: UUID,
+    room_id: UUID,
     element_id: UUID,
     comment_create: BoardElementCommentCreate,
     comment_service: BoardElementCommentServiceDep,
 ) -> BoardElementCommentPublic:
-    payload = comment_create.model_copy(update={'board_element_id': element_id})
-    # TODO: author_id should come from OAuth current user later.
-    return await comment_service.create_comment(payload)
+    _ = room_id
+    # TODO: author_id should come from the current authenticated
+    #  user after OAuth2 is implemented.
+    return await comment_service.create_comment(element_id, comment_create)
 
 
 @router.put('/{comment_id}')
 async def update_board_element_comment(
-    # room_id: UUID,
-    # element_id: UUID,
+    room_id: UUID,
+    element_id: UUID,
     comment_id: UUID,
     comment_update: BoardElementCommentUpdate,
     comment_service: BoardElementCommentServiceDep,
 ) -> Optional[BoardElementCommentPublic]:
-    # TODO: validate ownership after auth is implemented.
-    return await comment_service.update_comment(comment_update, comment_id)
+    _ = room_id
+    # TODO: validate comment ownership after OAuth2 is implemented.
+    return await comment_service.update_comment(
+        element_id,
+        comment_id,
+        comment_update,
+    )
 
 
 @router.delete('/{comment_id}')
 async def delete_board_element_comment(
-    # room_id: UUID,
-    # element_id: UUID,
+    room_id: UUID,
+    element_id: UUID,
     comment_id: UUID,
     comment_service: BoardElementCommentServiceDep,
 ) -> Optional[BoardElementCommentPublic]:
-    # TODO: validate ownership after auth is implemented.
-    return await comment_service.delete_comment(comment_id)
+    _ = room_id
+    # TODO: validate comment ownership after OAuth2 is implemented.
+    return await comment_service.delete_comment(element_id, comment_id)
