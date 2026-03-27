@@ -24,7 +24,6 @@ class PomodoroSessionPublic(BaseModel, PomodoroSessionBase):
     phase_ends_at: datetime | None = None
     session_ends_at: datetime | None = None
     is_running: bool
-    last_updated_at: datetime | None = None
 
 
 class PomodoroSessionCreate(PomodoroSessionBase):

@@ -44,12 +44,7 @@ async def get_board_element(
     element_id: UUID,
     board_service: BoardElementServiceDep,
 ) -> Optional[BoardElementPublic]:
-    filters = BoardElementFilters(room_id=room_id, offset=0, limit=100)
-    elements = await board_service.get_elements(filters)
-    for element in elements:
-        if element.id == element_id:
-            return element
-    return None
+    return await board_service.get_element_in_room(room_id, element_id)
 
 
 @router.put('/{element_id}')

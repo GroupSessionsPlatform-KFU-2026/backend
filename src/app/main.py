@@ -2,8 +2,8 @@ from fastapi import APIRouter, FastAPI
 
 from src.app.routers import (
     board,
-    board_element,
-    chat,
+    board_comments,
+    messages,
     participants,
     pomodoro,
     projects,
@@ -23,9 +23,9 @@ api_router.include_router(projects.router)
 api_router.include_router(tags.router)
 api_router.include_router(rooms.router)
 api_router.include_router(participants.router)
-api_router.include_router(chat.router)
+api_router.include_router(messages.router)
 api_router.include_router(board.router)
-api_router.include_router(board_element.router)
+api_router.include_router(board_comments.router)
 api_router.include_router(pomodoro.router)
 
 app.include_router(api_router)
