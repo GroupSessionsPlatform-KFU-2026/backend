@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -10,6 +11,12 @@ if TYPE_CHECKING:
     from .room import Room
 
 
+class PomodoroPhase(StrEnum):
+    WORK = 'work'
+    SHORT_BREAK = 'short_break'
+    LONG_BREAK = 'long_break'
+
+
 class PomodoroSessionBase(SQLModel):
     work_duration: int
     short_break_duration: int
@@ -19,12 +26,11 @@ class PomodoroSessionBase(SQLModel):
 
 class PomodoroSessionPublic(BaseModel, PomodoroSessionBase):
     room_id: UUID
-    current_phase: str
+    current_phase: PomodoroPhase
     completed_cycles: int
     phase_ends_at: datetime | None = None
     session_ends_at: datetime | None = None
     is_running: bool
-    last_updated_at: datetime | None = None
 
 
 class PomodoroSessionCreate(PomodoroSessionBase):

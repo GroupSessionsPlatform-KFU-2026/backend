@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -18,7 +17,6 @@ class ChatMessageBase(SQLModel):
 class ChatMessagePublic(BaseModel, ChatMessageBase):
     room_id: UUID
     sender_id: UUID
-    sent_at: datetime | None = None
     is_edited: bool
 
 

@@ -5,6 +5,7 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
+from ..schemas.board_elements_filters import BoardElementType
 from .base import BaseModel
 
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class BoardElementBase(SQLModel):
-    element_type: str
+    element_type: BoardElementType
     data: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
 
 
