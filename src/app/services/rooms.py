@@ -10,7 +10,7 @@ from src.app.dependencies.repositories import (
     RoomRepository,
     RoomRepositoryDep,
 )
-from src.app.models.room import Room, RoomCreate, RoomUpdate
+from src.app.models.room import Room, RoomCreate, RoomStatus, RoomUpdate
 from src.app.models.room_participant import RoomParticipant
 from src.app.schemas.room_filters import RoomFilters
 from src.app.schemas.room_request import JoinRoomRequest
@@ -45,7 +45,7 @@ class RoomService:
         room = Room(
             **room_dump,
             room_code=generate_room_code(),
-            status='active',
+            status=RoomStatus.ACTIVE,
             ended_at=None,
         )
         # TODO: creator_id should come from OAuth current user later.
@@ -67,23 +67,17 @@ class RoomService:
         if room is None:
             return None
 
-        room.status = 'ended'
+        room.status = RoomStatus.ENDED
         room.ended_at = datetime.now(timezone.utc)
         return await self.__room_repository.save(room)
 
     async def join_room(self, payload: JoinRoomRequest) -> Optional[RoomParticipant]:
         # TODO: user_id should come from OAuth current user later.
-        filters = RoomFilters(room_code=payload.room_code, offset=0, limit=1)
-        rooms = await self.__room_repository.fetch(
-            filters=filters,
-            offset=filters.offset,
-            limit=filters.limit,
+        room = await self.__room_repository.get_one_by_filters(
+            extra_filters={'room_code': payload.room_code},
         )
-
-        if not rooms:
+        if room is None:
             return None
-
-        room = rooms[0]
 
         participant = RoomParticipant(
             room_id=room.id,

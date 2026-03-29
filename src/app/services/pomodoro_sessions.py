@@ -7,6 +7,7 @@ from src.app.dependencies.repositories import (
     PomodoroSessionRepositoryDep,
 )
 from src.app.models.pomodoro_session import (
+    PomodoroPhase,
     PomodoroSession,
     PomodoroSessionCreate,
     PomodoroSessionUpdate,
@@ -37,7 +38,7 @@ class PomodoroSessionService:
         pomodoro_dump = pomodoro_create.model_dump()
         pomodoro = PomodoroSession(
             **pomodoro_dump,
-            current_phase='work',
+            current_phase=PomodoroPhase.WORK,
             completed_cycles=0,
             is_running=False,
             phase_ends_at=None,
@@ -55,11 +56,9 @@ class PomodoroSessionService:
         self,
         room_id: UUID,
     ) -> Optional[PomodoroSession]:
-        sessions = await self.__repository.fetch(
-            room_id=room_id,
-            limit=1,
+        return await self.__repository.get_one_by_filters(
+            extra_filters={'room_id': room_id},
         )
-        return sessions[0] if sessions else None
 
     async def update_pomodoro(
         self,
@@ -67,6 +66,16 @@ class PomodoroSessionService:
         pomodoro_id: UUID,
     ) -> Optional[PomodoroSession]:
         return await self.__repository.update(pomodoro_id, pomodoro_update)
+
+    async def update_room_pomodoro(
+        self,
+        room_id: UUID,
+        pomodoro_update: PomodoroSessionUpdate,
+    ) -> Optional[PomodoroSession]:
+        session = await self.get_room_pomodoro(room_id)
+        if session is None:
+            return None
+        return await self.__repository.update(session.id, pomodoro_update)
 
     async def start_pomodoro(
         self,
@@ -78,12 +87,12 @@ class PomodoroSessionService:
 
         now = datetime.now(timezone.utc)
 
-        if session.current_phase == 'short_break':
+        if session.current_phase == PomodoroPhase.SHORT_BREAK:
             duration = session.short_break_duration
-        elif session.current_phase == 'long_break':
+        elif session.current_phase == PomodoroPhase.LONG_BREAK:
             duration = session.long_break_duration
         else:
-            session.current_phase = 'work'
+            session.current_phase = PomodoroPhase.WORK
             duration = session.work_duration
 
         session.is_running = True
@@ -110,7 +119,7 @@ class PomodoroSessionService:
             return None
 
         session.completed_cycles = 0
-        session.current_phase = 'work'
+        session.current_phase = PomodoroPhase.WORK
         session.is_running = False
         session.phase_ends_at = None
         session.session_ends_at = None

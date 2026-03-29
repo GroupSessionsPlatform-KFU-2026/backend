@@ -29,11 +29,8 @@ async def update_pomodoro_settings(
     pomodoro_update: PomodoroSessionUpdate,
     pomodoro_service: PomodoroSessionServiceDep,
 ) -> Optional[PomodoroSessionPublic]:
-    session = await pomodoro_service.get_room_pomodoro(room_id)
-    if session is None:
-        return None
     # TODO: validate room ownership/moderation after auth is implemented.
-    return await pomodoro_service.update_pomodoro(pomodoro_update, session.id)
+    return await pomodoro_service.update_room_pomodoro(room_id, pomodoro_update)
 
 
 @router.post('/start')

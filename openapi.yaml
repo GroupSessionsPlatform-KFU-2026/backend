@@ -2998,7 +2998,7 @@ components:
         content:
           type: string
           example: Hello everyone
-        sent_at:
+        created_at:
           type: string
           format: date-time
         is_edited:
@@ -3198,7 +3198,7 @@ components:
           example: 4
         current_phase:
           type: string
-          enum: [work, short_break, long_break, paused]
+          enum: [work, short_break, long_break]
           example: work
         completed_cycles:
           type: integer
@@ -3212,9 +3212,6 @@ components:
         is_running:
           type: boolean
           example: true
-        last_updated_at:
-          type: string
-          format: date-time
       required:
         - id
         - room_id
@@ -3227,4 +3224,3 @@ components:
         - phase_ends_at
         - session_ends_at
         - is_running
-        - last_updated_at

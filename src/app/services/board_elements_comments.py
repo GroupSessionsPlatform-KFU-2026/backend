@@ -33,12 +33,12 @@ class BoardElementCommentService:
         room_id: UUID,
         element_id: UUID,
     ) -> Optional[BoardElement]:
-        elements = await self.__board_element_repository.fetch(
-            room_id=room_id,
-            id=element_id,
-            limit=1,
+        return await self.__board_element_repository.get_one_by_filters(
+            extra_filters={
+                'room_id': room_id,
+                'id': element_id,
+            },
         )
-        return elements[0] if elements else None
 
     async def get_comments(
         self,
@@ -52,9 +52,9 @@ class BoardElementCommentService:
 
         return await self.__repository.fetch(
             filters=filters,
-            board_element_id=element_id,
             offset=filters.offset,
             limit=filters.limit,
+            extra_filters={'board_element_id': element_id},
         )
 
     async def create_comment(
@@ -85,12 +85,12 @@ class BoardElementCommentService:
         if element is None:
             return None
 
-        comments = await self.__repository.fetch(
-            id=comment_id,
-            board_element_id=element_id,
-            limit=1,
+        return await self.__repository.get_one_by_filters(
+            extra_filters={
+                'id': comment_id,
+                'board_element_id': element_id,
+            },
         )
-        return comments[0] if comments else None
 
     async def update_comment(
         self,

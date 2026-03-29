@@ -35,7 +35,7 @@ class Repository[Model: BaseModel]:
         filters: Optional[PydanticBaseModel] = None,
         offset: Optional[int] = None,
         limit: Optional[int] = None,
-        **extra_filters: Any,
+        extra_filters: Optional[dict[str, Any]] = None,
     ) -> Sequence[Model]:
         select_statement = select(self.model)
         filter_statement = and_(True)
@@ -44,7 +44,8 @@ class Repository[Model: BaseModel]:
         if filters is not None:
             filters_dict.update(filters.model_dump(exclude_unset=True))
 
-        filters_dict.update(extra_filters)
+        if extra_filters is not None:
+            filters_dict.update(extra_filters)
 
         for key, value in filters_dict.items():
             if key in {'offset', 'limit'}:
@@ -73,15 +74,30 @@ class Repository[Model: BaseModel]:
 
     async def get_one_by_filters(
         self,
-        filters: PydanticBaseModel,
+        filters: Optional[PydanticBaseModel] = None,
+        extra_filters: Optional[dict[str, Any]] = None,
     ) -> Optional[Model]:
-        entities = await self.fetch(filters=filters, limit=1)
+        entities = await self.fetch(
+            filters=filters,
+            limit=1,
+            extra_filters=extra_filters,
+        )
         if not entities:
             return None
         return entities[0]
 
-    async def exists_by_filters(self, filters: PydanticBaseModel) -> bool:
-        return await self.get_one_by_filters(filters) is not None
+    async def exists_by_filters(
+        self,
+        filters: Optional[PydanticBaseModel] = None,
+        extra_filters: Optional[dict[str, Any]] = None,
+    ) -> bool:
+        return (
+            await self.get_one_by_filters(
+                filters=filters,
+                extra_filters=extra_filters,
+            )
+            is not None
+        )
 
     async def save(self, instance: Model) -> Model:
         self.__session.add(instance)
