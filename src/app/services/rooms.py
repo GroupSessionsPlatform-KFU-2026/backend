@@ -26,7 +26,6 @@ def generate_room_code(length: int = 6) -> str:
     alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-
 def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
     defaults = settings.pomodoro
 
@@ -42,7 +41,6 @@ def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
         phase_ends_at=None,
         session_ends_at=None,
     )
-
 
 class RoomService:
     __room_repository: RoomRepository
