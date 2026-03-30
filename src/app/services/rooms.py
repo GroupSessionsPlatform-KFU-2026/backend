@@ -12,14 +12,8 @@ from src.app.dependencies.repositories import (
 )
 from src.app.models.room import Room, RoomCreate, RoomStatus, RoomUpdate
 from src.app.models.room_participant import RoomParticipant
-from src.app.routers.rooms import JoinRoomRequest
 from src.app.schemas.room_filters import RoomFilters
 from src.app.schemas.room_request import JoinRoomRequest
-
-
-def generate_room_code(length: int = 6) -> str:
-    alphabet = string.ascii_uppercase + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 def generate_room_code(length: int = 6) -> str:
