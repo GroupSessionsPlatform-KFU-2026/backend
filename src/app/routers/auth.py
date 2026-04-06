@@ -1,12 +1,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Cookie, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Cookie, Query, Request, Response, status, Depends
 
 from src.app.core.limiter import limiter
+from src.app.core.responses import auth_responses, conflict_responses
 from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
 from src.app.dependencies.services import get_auth_service
+from src.app.services.auth import AuthService
 from src.app.models.user import UserCreate
 from src.app.schemas.security import (
     LogoutResponse,
@@ -14,31 +16,12 @@ from src.app.schemas.security import (
     RegisterResponse,
     TokenData,
 )
-from src.app.services.auth import AuthService
 
 router = APIRouter(
     prefix='/auth',
     tags=['auth'],
 )
 
-
-REGISTER_RESPONSES = {
-    409: {'description': 'Email or username already exists'},
-    500: {'description': 'Public role is not initialized'},
-}
-
-LOGIN_RESPONSES = {
-    401: {'description': 'Invalid credentials'},
-    403: {'description': 'Account is not verified'},
-}
-
-REFRESH_RESPONSES = {
-    401: {'description': 'Refresh token error'},
-}
-
-LOGOUT_RESPONSES = {
-    401: {'description': 'Refresh token error'},
-}
 
 VERIFY_RESPONSES = {
     400: {'description': 'Notification already used or expired'},
@@ -58,7 +41,7 @@ CONFIRM_RESET_RESPONSES = {
 @router.post(
     '/register',
     status_code=status.HTTP_201_CREATED,
-    responses=REGISTER_RESPONSES,
+    responses=conflict_responses,
 )
 @limiter.limit(settings.rate_limit.auth)
 async def register(
@@ -71,7 +54,7 @@ async def register(
 
 @router.post(
     '/login',
-    responses=LOGIN_RESPONSES,
+    responses=auth_responses,
 )
 @limiter.limit(settings.rate_limit.auth)
 async def login(
@@ -96,7 +79,7 @@ async def login(
 
 @router.post(
     '/refresh',
-    responses=REFRESH_RESPONSES,
+    responses=auth_responses,
 )
 async def refresh(
     response: Response,
@@ -119,7 +102,7 @@ async def refresh(
 
 @router.post(
     '/logout',
-    responses=LOGOUT_RESPONSES,
+    responses=auth_responses,
 )
 async def logout(
     response: Response,

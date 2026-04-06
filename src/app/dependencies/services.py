@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import BackgroundTasks, Depends
 
+<<<<<<< HEAD
 from src.app.dependencies.repositories import (
     EmailNotificationRepositoryDep,
     RefreshSessionRepositoryDep,
@@ -9,7 +10,13 @@ from src.app.dependencies.repositories import (
     UserRepositoryDep,
     UserRoleRepositoryDep,
 )
+<<<<<<< HEAD
 from src.app.services.auth import AuthRepositories, AuthService
+=======
+=======
+>>>>>>> 4ae6b89 (feature:dependency and service jwt)
+from src.app.services.auth import AuthService
+>>>>>>> a7a34d2 (feature:dependency and service jwt)
 from src.app.services.board_elements import BoardElementService
 from src.app.services.board_elements_comments import BoardElementCommentService
 from src.app.services.chat_messages import ChatMessageService
@@ -23,6 +30,7 @@ from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
 
+AuthServiceDep = Annotated[AuthService, Depends(AuthService)]
 UserServiceDep = Annotated[UserService, Depends(UserService)]
 
 

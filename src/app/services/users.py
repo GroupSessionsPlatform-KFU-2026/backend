@@ -4,11 +4,7 @@ from uuid import UUID
 from src.app.dependencies.repositories import UserRepository, UserRepositoryDep
 from src.app.models.user import User, UserCreate, UserUpdate
 from src.app.schemas.user_filters import UserFilters
-<<<<<<< HEAD
 from src.app.utils.hashing import get_password_hash, verify_password
-=======
-from src.app.utils.hashing import get_password_hash
->>>>>>> 8c6f7aa (feature: jwt)
 
 
 class UserService:
@@ -34,7 +30,6 @@ class UserService:
 
         password = str(user_dump.pop('password'))
         password_hash = get_password_hash(password)
-<<<<<<< HEAD
 
         user = User(
             **user_dump,
@@ -42,9 +37,6 @@ class UserService:
             is_active=True,
         )
 
-=======
-        user = User(**user_dump, password_hash=password_hash, is_active=True)
->>>>>>> 8c6f7aa (feature: jwt)
         return await self.__user_repository.save(user)
 
     def verify_user_password(self, raw_password: str, password_hash: str) -> bool:

@@ -4,6 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from src.app.dependencies.security import require_scoped_user
+from fastapi import APIRouter, HTTPException, status
+
+from src.app.dependencies.security import CurrentUserDep
 from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import User as UserModel
 from src.app.models.user import UserPublic
@@ -15,8 +18,10 @@ router = APIRouter(
     tags=['users'],
 )
 
-
-@router.get('/me', responses=auth_responses,)
+@router.get(
+    '/me',
+    responses=auth_responses,
+)
 async def get_me(
     current_user: Annotated[
         UserModel,

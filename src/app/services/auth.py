@@ -572,3 +572,4 @@ class AuthService:
             f'{settings.email.app_base_url}'
             f'/reset-password?user_id={user_id}&code={code}'
         )
+

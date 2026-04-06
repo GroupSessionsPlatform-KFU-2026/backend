@@ -28,6 +28,12 @@ class RefreshSession(BaseModel, table=True):
         index=True,
     )
 
+    jti: str = Field(
+        nullable=False,
+        unique=True,
+        index=True,
+        max_length=255,
+    )
     expires_at: datetime = Field(
         nullable=False,
         sa_type=TIMESTAMP(timezone=True),

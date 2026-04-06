@@ -31,6 +31,7 @@ fastapi_app = FastAPI(
     version='1.1.0',
 )
 
+<<<<<<< HEAD
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.common.cors_allowed_origins,
@@ -56,6 +57,9 @@ api_router = APIRouter(
     responses=common_responses,
 )
 
+=======
+api_router = APIRouter(prefix='/api/v1')
+>>>>>>> 4ae6b89 (feature:dependency and service jwt)
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(projects.router)
