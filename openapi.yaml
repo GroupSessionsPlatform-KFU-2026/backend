@@ -164,6 +164,7 @@ paths:
                 message: An unexpected error occurred on the server
                 details: null
   /api/v1/auth/refresh:
+  /auth/refresh:
     post:
       tags: [ auth ]
       summary: Refresh JWT tokens
@@ -194,6 +195,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/auth/logout:
+  /auth/logout:
     post:
       tags: [ auth ]
       summary: Logout user
@@ -221,6 +223,7 @@ paths:
                     type: boolean
                     example: true
   /api/v1/users/me:
+  /users/me:
     get:
       tags: [users]
       summary: Get current authenticated user
@@ -2521,6 +2524,8 @@ components:
         password:
           tokenUrl: /api/v1/auth/login
           refreshUrl: /api/v1/auth/refresh
+          tokenUrl: /auth/login
+          refreshUrl: /auth/refresh
           scopes:
             users:read: Read user data
             projects:read: Read projects

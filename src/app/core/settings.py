@@ -4,7 +4,13 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AuthSettings(BaseModel):
+class AuthSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix='AUTH_',
+        env_file='.env',
+        extra='ignore',
+    )
+
     secret: str = 'secret'
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
@@ -12,7 +18,13 @@ class AuthSettings(BaseModel):
     cookie_secure: bool = False
 
 
-class DBSettings(BaseModel):
+class DBSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix='DB_',
+        env_file='.env',
+        extra='ignore',
+    )
+
     db_schema: str = 'postgresql+asyncpg'
     db_host: str = 'localhost'
     db_user: str = 'postgres'
@@ -31,6 +43,7 @@ class RBACSettings(BaseModel):
 class SocketSettings(BaseModel):
     cors_allowed_origins: str | list[str] = '*'
     path: str = 'socket.io'
+
 
 class CommonSettings(BaseModel):
     host: str = 'http://localhost:8000'
@@ -90,6 +103,7 @@ class Settings(BaseSettings):
     email: EmailSettings = EmailSettings()
     common: CommonSettings = CommonSettings()
     rate_limit: RateLimitSettings = RateLimitSettings()
+
 
 @lru_cache
 def get_settings() -> Settings:
