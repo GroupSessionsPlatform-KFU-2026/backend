@@ -6,12 +6,12 @@ from src.app.core.settings import settings
 
 def form_db_url() -> str:
     return URL.create(
-        drivername=settings.db_schema,
-        username=settings.db_user,
-        password=settings.db_password,
-        host=settings.db_host,
-        port=settings.db_port,
-        database=settings.db_name,
+        drivername=settings.db.db_schema,
+        username=settings.db.db_user,
+        password=settings.db.db_password,
+        host=settings.db.db_host,
+        port=settings.db.db_port,
+        database=settings.db.db_name,
     ).render_as_string(hide_password=False)
 
 

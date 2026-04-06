@@ -17,6 +17,8 @@ dependencies = [
     "sqlalchemy>=2.0.48",
     "sqlmodel>=0.0.37",
     "uvicorn>=0.41.0",
+    "pwdlib[argon2]>=0.3.0",
+    "jwt>=1.4.0",
 ]
 
 [dependency-groups]

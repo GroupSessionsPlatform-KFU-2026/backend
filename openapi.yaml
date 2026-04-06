@@ -52,7 +52,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                required: [ success ]
         '409':
           description: Email or username already exists
           content:
@@ -95,18 +100,33 @@ paths:
 
   /auth/login:
     post:
-      tags: [auth]
-      summary: Obtain access token
+      tags: [ auth ]
+      summary: Login user
       operationId: loginUser
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              type: object
+              required: [ username, password ]
+              properties:
+                username:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: secret123
       responses:
         '200':
           description: Successful authentication
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: HttpOnly cookie with refresh token
           content:
             application/json:
               schema:
@@ -143,7 +163,63 @@ paths:
                 error: INTERNAL_SERVER_ERROR
                 message: An unexpected error occurred on the server
                 details: null
+  /auth/refresh:
+    post:
+      tags: [ auth ]
+      summary: Refresh JWT tokens
+      operationId: refreshTokens
+      parameters:
+        - name: refresh_token
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Updated HttpOnly cookie with refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  /auth/logout:
+    post:
+      tags: [ auth ]
+      summary: Logout user
+      operationId: logoutUser
+      parameters:
+        - name: refresh_token
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful logout
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Clears refresh token cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
   /users/me:
     get:
       tags: [users]
@@ -2444,6 +2520,7 @@ components:
       flows:
         password:
           tokenUrl: /auth/login
+          refreshUrl: /auth/refresh
           scopes:
             users:read: Read user data
             projects:read: Read projects
@@ -2622,11 +2699,14 @@ components:
       properties:
         access_token:
           type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          example: eyJ...
+        refresh_token:
+          type: string
+          example: eyJ...
         token_type:
           type: string
           example: bearer
-      required: [access_token, token_type]
+      required: [ access_token, refresh_token, token_type ]
 
     UserResponse:
       type: object
@@ -3004,7 +3084,7 @@ components:
         is_edited:
           type: boolean
           example: false
-      required: [id, room_id, sender_id, content, sent_at, is_edited]
+      required: [id, room_id, sender_id, content, created_at, is_edited]
 
     MessageListResponse:
       type: object
