@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from src.app.services.auth import AuthService
 from src.app.services.board_elements import BoardElementService
 from src.app.services.board_elements_comments import BoardElementCommentService
 from src.app.services.chat_messages import ChatMessageService
@@ -12,6 +13,7 @@ from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
 
+AuthServiceDep = Annotated[AuthService, Depends(AuthService)]
 UserServiceDep = Annotated[UserService, Depends(UserService)]
 ProjectServiceDep = Annotated[ProjectService, Depends(ProjectService)]
 TagServiceDep = Annotated[TagService, Depends(TagService)]

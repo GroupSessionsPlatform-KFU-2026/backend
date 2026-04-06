@@ -8,8 +8,8 @@ from src.app.core.settings import settings
 from src.app.models.user import User as UserModel
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl='/auth/login',
-    refreshUrl='/auth/refresh',
+    tokenUrl='/api/v1/auth/login',
+    refreshUrl='/api/v1/auth/refresh',
 )
 
 

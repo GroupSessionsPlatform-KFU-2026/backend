@@ -23,11 +23,16 @@ async def authenticate_user(
 
     if user is None:
         return None
+
+    if not user.is_active:
+        return None
+
     password = auth_data.password
     is_password_matched = verify_password(password, user.password_hash)
 
     if is_password_matched:
         return user
+
     return None
 
 
@@ -37,17 +42,24 @@ AuthenticatedUserDep = Annotated[AuthenticatedUser, Depends(authenticate_user)]
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], user_service: UserServiceDep
 ) -> AuthenticatedUser:
-    payload = jwt.decode(
-        token,
-        settings.auth.secret,
-        algorithms=[settings.auth.token_algorithm],
-    )
+    try:
+        payload = jwt.decode(
+            token,
+            settings.auth.secret,
+            algorithms=[settings.auth.token_algorithm],
+        )
+
+    except (jwt.InvalidTokenError, ValueError):
+        return None
 
     user_id = payload.get('sub')
     if user_id is None:
         return None
 
-    return await user_service.get_user(UUID(user_id))
+    try:
+        return await user_service.get_user(UUID(user_id))
+    except ValueError:
+        return None
 
 
 CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
@@ -56,24 +68,29 @@ CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
 # Здесь refresh-токен обрабатывается отдельно через cookie и
 # не содержит access-токен внутри
 async def get_current_user_from_refresh_token(
+    user_service: UserServiceDep,
     refresh_token: Annotated[str | None, Cookie()] = None,
-    user_service: UserServiceDep = None,
 ) -> AuthenticatedUser:
     if refresh_token is None:
         return None
 
-    payload = jwt.decode(
-        refresh_token,
-        settings.auth.secret,
-        algorithms=[settings.auth.token_algorithm],
-    )
+    try:
+        payload = jwt.decode(
+            refresh_token,
+            settings.auth.secret,
+            algorithms=[settings.auth.token_algorithm],
+        )
+    except (jwt.InvalidTokenError, ValueError):
+        return None
 
     user_id = payload.get('sub')
-
     if user_id is None:
         return None
 
-    return await user_service.get_user(UUID(user_id))
+    try:
+        return await user_service.get_user(UUID(user_id))
+    except ValueError:
+        return None
 
 
 CurrentUserFromRefreshDep = Annotated[

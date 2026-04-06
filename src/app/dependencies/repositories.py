@@ -9,11 +9,22 @@ from src.app.models.chat_message import ChatMessage
 from src.app.models.pomodoro_session import PomodoroSession
 from src.app.models.project import Project
 from src.app.models.project_tag import ProjectTag
+from src.app.models.refresh_session import RefreshSession
 from src.app.models.room import Room
 from src.app.models.room_participant import RoomParticipant
 from src.app.models.tag import Tag
 from src.app.models.user import User
 from src.app.utils.repository import Repository
+
+
+async def get_refresh_session_repository(session: SessionDep):
+    yield Repository[RefreshSession](session)
+
+
+type RefreshSessionRepository = Repository[RefreshSession]
+RefreshSessionRepositoryDep = Annotated[
+    RefreshSessionRepository, Depends(get_refresh_session_repository)
+]
 
 
 async def get_user_repository(session: SessionDep):
