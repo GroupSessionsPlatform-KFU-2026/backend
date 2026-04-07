@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Cookie, Response, status
 
 from src.app.dependencies.security import AuthenticatedUserDep
 from src.app.dependencies.services import AuthServiceDep
@@ -13,7 +13,10 @@ router = APIRouter(
 )
 
 
-@router.post('/register')
+@router.post(
+    '/register',
+    status_code=status.HTTP_201_CREATED,
+)
 async def register(
     user_create: UserCreate,
     auth_service: AuthServiceDep,
@@ -33,8 +36,9 @@ async def login(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-        secure=False,
+        secure=False,  # TODO: set True in production (HTTPS)
         samesite='lax',
+        path='/',
     )
 
     return token_data
@@ -52,8 +56,9 @@ async def refresh(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-        secure=False,
+        secure=False,  # TODO: set True in production (HTTPS)
         samesite='lax',
+        path='/',
     )
 
     return token_data
@@ -69,6 +74,7 @@ async def logout(
 
     response.delete_cookie(
         key='refresh_token',
+        path='/',
     )
 
     return logout_response

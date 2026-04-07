@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -21,7 +22,11 @@ class UserBase(SQLModel):
 
 
 class UserPublic(BaseModel, UserBase):
-    last_login_at: datetime | None = None
+    last_login_at: datetime | None = Field(
+        default=None,
+        nullable=True,
+        sa_type=TIMESTAMP(timezone=True),
+    )
     is_active: bool
 
 

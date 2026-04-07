@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -31,6 +31,9 @@ class ChatMessageUpdate(ChatMessageBase):
 
 class ChatMessage(ChatMessagePublic, table=True):
     __tablename__ = 'chat_message'
+
+    room_id: UUID = Field(foreign_key='room.id', nullable=False)
+    sender_id: UUID = Field(foreign_key='user.id', nullable=False)
 
     room: 'Room' = Relationship(back_populates='messages')
     sender: 'User' = Relationship(back_populates='sent_messages')

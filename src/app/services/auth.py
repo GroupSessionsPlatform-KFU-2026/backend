@@ -68,10 +68,15 @@ class AuthService:
                 detail='Invalid email or password',
             )
 
+        safe_user_id = user.id
+
         access_token = create_access_token(user)
         refresh_token = create_refresh_token(user)
 
-        await self.__create_refresh_session(user.id, refresh_token)
+        user.last_login_at = datetime.now(timezone.utc)
+        await self.__user_repository.save(user)
+
+        await self.__create_refresh_session(safe_user_id, refresh_token)
 
         return TokenData(
             access_token=access_token,
@@ -107,6 +112,9 @@ class AuthService:
             )
 
         if refresh_session.expires_at <= datetime.now(timezone.utc):
+            refresh_session.is_revoked = True
+            await self.__refresh_session_repository.save(refresh_session)
+
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Refresh token expired',
@@ -120,12 +128,16 @@ class AuthService:
             )
 
         refresh_session.is_revoked = True
-        await self.__refresh_session_repository.save(refresh_session)
+        # IMPORTANT: save everything needed from user BEFORE commit
+        safe_user_id = user.id
 
         access_token = create_access_token(user)
         new_refresh_token = create_refresh_token(user)
 
-        await self.__create_refresh_session(user.id, new_refresh_token)
+        refresh_session.is_revoked = True
+        await self.__refresh_session_repository.save(refresh_session)
+
+        await self.__create_refresh_session(safe_user_id, new_refresh_token)
 
         return TokenData(
             access_token=access_token,
@@ -140,7 +152,7 @@ class AuthService:
                 detail='Refresh token was not provided',
             )
 
-        payload = self.__decode_token(refresh_token)
+        payload = self.__decode_token(refresh_token, verify_exp=False)
         jti = payload.get('jti')
 
         if jti is None:
@@ -185,13 +197,19 @@ class AuthService:
         )
         return await self.__refresh_session_repository.save(refresh_session)
 
-    def __decode_token(self, token: str) -> dict:
+    def __decode_token(self, token: str, verify_exp: bool = True) -> dict:
         try:
             return jwt.decode(
                 token,
                 settings.auth.secret,
                 algorithms=[settings.auth.token_algorithm],
+                options={'verify_exp': verify_exp},
             )
+        except jwt.ExpiredSignatureError as error:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Token expired',
+            ) from error
         except jwt.InvalidTokenError as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

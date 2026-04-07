@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -31,6 +31,9 @@ class BoardElementCommentUpdate(BoardElementCommentBase):
 
 class BoardElementComment(BoardElementCommentPublic, table=True):
     __tablename__ = 'board_element_comment'
+
+    board_element_id: UUID = Field(foreign_key='board_element.id', nullable=False)
+    author_id: UUID = Field(foreign_key='user.id', nullable=False)
 
     board_element: 'BoardElement' = Relationship(back_populates='comments')
     author: 'User' = Relationship(back_populates='comments')

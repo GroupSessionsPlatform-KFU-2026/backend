@@ -15,7 +15,7 @@ from src.app.routers import (
 
 app = FastAPI(
     title='Group Sessions Platform API',
-    version='1.0.0',
+    version='1.1.0',
 )
 
 api_router = APIRouter(prefix='/api/v1')

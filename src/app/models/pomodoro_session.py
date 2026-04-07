@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -43,5 +43,7 @@ class PomodoroSessionUpdate(PomodoroSessionBase):
 
 class PomodoroSession(PomodoroSessionPublic, table=True):
     __tablename__ = 'pomodoro_session'
+
+    room_id: UUID = Field(foreign_key='room.id', nullable=False)
 
     room: 'Room' = Relationship(back_populates='pomodoro_sessions')

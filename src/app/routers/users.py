@@ -27,7 +27,14 @@ async def get_me(
 
 @router.get('/{user_id}')
 async def get_user(
-    user_service: UserServiceDep,
     user_id: UUID,
+    user_service: UserServiceDep,
+    current_user: CurrentUserDep,
 ) -> Optional[UserPublic]:
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication credentials were not provided or are invalid',
+        )
+
     return await user_service.get_user(user_id)
