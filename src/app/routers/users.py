@@ -1,22 +1,20 @@
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.security import require_scoped_user
-from fastapi import APIRouter, HTTPException, status
-
-from src.app.dependencies.security import CurrentUserDep
 from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import User as UserModel
 from src.app.models.user import UserPublic
-from src.app.core.responses import auth_responses, detail_responses
 from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/users',
     tags=['users'],
 )
+
 
 @router.get(
     '/me',

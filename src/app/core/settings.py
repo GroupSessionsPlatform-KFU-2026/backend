@@ -20,7 +20,6 @@ class AuthSettings(BaseSettings):
 
 class DBSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix='DB_',
         env_file='.env',
         extra='ignore',
     )

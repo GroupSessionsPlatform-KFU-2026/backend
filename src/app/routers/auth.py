@@ -1,7 +1,15 @@
 from typing import Annotated
 from uuid import UUID
 
+<<<<<<< HEAD
 from fastapi import APIRouter, Cookie, Query, Request, Response, status, Depends
+=======
+<<<<<<< HEAD
+from fastapi import APIRouter, Cookie, Request, Response, status
+=======
+from fastapi import APIRouter, Cookie, Response, status
+>>>>>>> 781d067 (clean alembic history and finalize jwt auth)
+>>>>>>> 87f016b (clean alembic history and finalize jwt auth)
 
 from src.app.core.limiter import limiter
 from src.app.core.responses import auth_responses, conflict_responses
@@ -41,9 +49,13 @@ CONFIRM_RESET_RESPONSES = {
 @router.post(
     '/register',
     status_code=status.HTTP_201_CREATED,
+<<<<<<< HEAD
     responses=conflict_responses,
 )
 @limiter.limit(settings.rate_limit.auth)
+=======
+)
+>>>>>>> 781d067 (clean alembic history and finalize jwt auth)
 async def register(
     request: Request,
     user_create: UserCreate,
@@ -69,7 +81,11 @@ async def login(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
+<<<<<<< HEAD
         secure=settings.auth.cookie_secure,
+=======
+        secure=False,  # TODO: set True in production (HTTPS)
+>>>>>>> 781d067 (clean alembic history and finalize jwt auth)
         samesite='lax',
         path='/',
     )
@@ -92,7 +108,11 @@ async def refresh(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
+<<<<<<< HEAD
         secure=settings.auth.cookie_secure,
+=======
+        secure=False,  # TODO: set True in production (HTTPS)
+>>>>>>> 781d067 (clean alembic history and finalize jwt auth)
         samesite='lax',
         path='/',
     )

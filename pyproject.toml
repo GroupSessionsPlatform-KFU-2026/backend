@@ -20,12 +20,15 @@ dependencies = [
     "pwdlib[argon2]>=0.3.0",
     "python-multipart>=0.0.24",
     "pyjwt>=2.12.1",
+<<<<<<< HEAD
     "python-socketio>=5.16.1",
 
     "fastapi-mail>=1.6.2",
     "slowapi>=0.1.9",
     "gunicorn>=25.3.0",
     "jwt>=1.4.0",
+=======
+>>>>>>> 781d067 (clean alembic history and finalize jwt auth)
 ]
 
 [dependency-groups]
