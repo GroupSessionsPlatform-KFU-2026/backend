@@ -5,12 +5,18 @@ Revises: f1146c74a873
 Create Date: 2026-04-09 15:28:01.617460
 
 """
+
 import sqlalchemy as sa
 import sqlmodel  # NEW
 from alembic import op
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel             # NEW
+import sqlalchemy as sa
+import sqlmodel  # NEW
+from alembic import op
+
+
 import sqlalchemy as sa
 import sqlmodel  # NEW
 from alembic import op
@@ -127,3 +133,5 @@ def downgrade() -> None:
     op.drop_table('role')
     op.drop_table('permission')
     # ### end Alembic commands ###
+    # ### end Alembic commands ###
+
