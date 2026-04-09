@@ -7,6 +7,11 @@ from src.app.dependencies.security import CurrentUserDep
 from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import UserPublic
 
+from fastapi import Security
+from src.app.dependencies.security import get_current_user
+from src.app.models.user import User
+
+
 router = APIRouter(
     prefix='/users',
     tags=['users'],
@@ -15,13 +20,8 @@ router = APIRouter(
 
 @router.get('/me')
 async def get_me(
-    current_user: CurrentUserDep,
+    current_user: User = Security(get_current_user, scopes=['users:read']),
 ) -> UserPublic:
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication credentials were not provided or are invalid',
-        )
     return current_user
 
 
@@ -29,12 +29,6 @@ async def get_me(
 async def get_user(
     user_id: UUID,
     user_service: UserServiceDep,
-    current_user: CurrentUserDep,
+    current_user: User = Security(get_current_user, scopes=['users:read']),
 ) -> Optional[UserPublic]:
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Authentication credentials were not provided or are invalid',
-        )
-
     return await user_service.get_user(user_id)

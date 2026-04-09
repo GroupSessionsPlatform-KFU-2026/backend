@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
+from .user_role import UserRoleLink
 
 if TYPE_CHECKING:
     from .board_element import BoardElement
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     from .project import Project
     from .room import Room
     from .room_participant import RoomParticipant
+    from .role import Role
 
 
 class UserBase(SQLModel):
@@ -45,6 +47,11 @@ class User(UserPublic, table=True):
     __tablename__ = 'user'
     password_hash: str
 
+    roles: list['Role'] = Relationship(
+        back_populates='users',
+        link_model=UserRoleLink,
+    )
+    
     projects: list['Project'] = Relationship(back_populates='owner')
     created_rooms: list['Room'] = Relationship(back_populates='creator')
     participations: list['RoomParticipant'] = Relationship(back_populates='user')

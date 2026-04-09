@@ -17,19 +17,36 @@ from src.app.models.user import User, UserCreate
 from src.app.schemas.security import LogoutResponse, RegisterResponse, TokenData
 from src.app.schemas.user_filters import UserFilters
 from src.app.utils.hashing import get_password_hash
+from src.app.dependencies.repositories import (
+    RefreshSessionRepository,
+    RefreshSessionRepositoryDep,
+    RoleRepository,
+    RoleRepositoryDep,
+    UserRepository,
+    UserRepositoryDep,
+    UserRoleRepository,
+    UserRoleRepositoryDep,
+)
+from src.app.models.user_role import UserRoleLink
 
 
 class AuthService:
     __user_repository: UserRepository
     __refresh_session_repository: RefreshSessionRepository
+    __role_repository: RoleRepository
+    __user_role_repository: UserRoleRepository
 
     def __init__(
         self,
         user_repository: UserRepositoryDep,
         refresh_session_repository: RefreshSessionRepositoryDep,
+        role_repository: RoleRepositoryDep,
+        user_role_repository: UserRoleRepositoryDep,
     ):
         self.__user_repository = user_repository
         self.__refresh_session_repository = refresh_session_repository
+        self.__role_repository = role_repository
+        self.__user_role_repository = user_role_repository
 
     async def register(self, user_create: UserCreate) -> RegisterResponse:
         existing_user_by_email = await self.__user_repository.get_one_by_filters(
@@ -57,8 +74,28 @@ class AuthService:
             password_hash=get_password_hash(user_create.password),
             is_active=True,
         )
-        await self.__user_repository.save(user)
+        role = await self.__user_repository.save(user)
 
+        public_role = await self.__role_repository.get_one_by_filters(
+            extra_filters={'name': settings.rbac.public_role},
+        )
+        if public_role is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Public role is not initialized',
+            )
+
+        existing_link = await self.__user_role_repository.get_one_by_filters(
+            extra_filters={
+                'user_id': user.id,
+                'role_id': public_role.id,
+            },
+        )
+        
+        if existing_link is None:
+            await self.__user_role_repository.save(
+                UserRoleLink(user_id=user.id, role_id=public_role.id),
+            )
         return RegisterResponse()
 
     async def login(self, user: User | None) -> TokenData:

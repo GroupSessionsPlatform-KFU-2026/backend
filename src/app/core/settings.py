@@ -29,12 +29,25 @@ class DBSettings(BaseSettings):
     db_port: int = 5432
     db_name: str = 'db'
 
+class RBACSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix='RBAC_',
+        env_file='.env',
+        extra='ignore',
+    )
+
+    admin_email: str = 'admin@example.com'
+    admin_password: str = 'admin123456'
+    admin_role: str = 'admin'
+    public_role: str = 'public'
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env')
 
     db: DBSettings = DBSettings()
     auth: AuthSettings = AuthSettings()
+    rbac: RBACSettings = RBACSettings()
 
 
 @lru_cache

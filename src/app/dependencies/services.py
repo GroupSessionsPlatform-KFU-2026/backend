@@ -12,6 +12,7 @@ from src.app.services.room_participants import RoomParticipantService
 from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
+from src.app.services.rbac_bootstrap import RBACBootstrapService
 
 AuthServiceDep = Annotated[AuthService, Depends(AuthService)]
 UserServiceDep = Annotated[UserService, Depends(UserService)]
@@ -28,4 +29,8 @@ BoardElementCommentServiceDep = Annotated[
 ]
 PomodoroSessionServiceDep = Annotated[
     PomodoroSessionService, Depends(PomodoroSessionService)
+]
+
+RBACBootstrapServiceDep = Annotated[
+    RBACBootstrapService, Depends(RBACBootstrapService)
 ]
