@@ -4,6 +4,7 @@ from uuid import UUID
 from src.app.dependencies.repositories import UserRepository, UserRepositoryDep
 from src.app.models.user import User, UserCreate, UserUpdate
 from src.app.schemas.user_filters import UserFilters
+from src.app.utils.hashing import get_password_hash
 
 
 class UserService:
@@ -19,12 +20,15 @@ class UserService:
             limit=filters.limit,
         )
 
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        return await self.__user_repository.get_one_by_filters(
+            filters=UserFilters(email=email),
+        )
+
     async def create_user(self, user_create: UserCreate) -> User:
         user_dump = user_create.model_dump()
         password = str(user_dump.pop('password'))
-        password_hash = password
-        # TODO: replace plain password storage with real hashing
-        #  after auth is implemented.
+        password_hash = get_password_hash(password)
         user = User(**user_dump, password_hash=password_hash, is_active=True)
         return await self.__user_repository.save(user)
 

@@ -34,8 +34,12 @@ class BoardElementUpdate(BoardElementBase):
     pass
 
 
-class BoardElement(BoardElementPublic, table=True):
+class BoardElement(BoardElementBase, BaseModel, table=True):
     __tablename__ = 'board_element'
+
+    room_id: UUID = Field(foreign_key='room.id', nullable=False)
+    author_id: UUID = Field(foreign_key='user.id', nullable=False)
+    is_deleted: bool = False
 
     room: 'Room' = Relationship(back_populates='board_elements')
     author: 'User' = Relationship(back_populates='board_elements')

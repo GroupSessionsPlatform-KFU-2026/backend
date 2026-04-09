@@ -9,11 +9,26 @@ from src.app.models.chat_message import ChatMessage
 from src.app.models.pomodoro_session import PomodoroSession
 from src.app.models.project import Project
 from src.app.models.project_tag import ProjectTag
+from src.app.models.refresh_session import RefreshSession
 from src.app.models.room import Room
 from src.app.models.room_participant import RoomParticipant
 from src.app.models.tag import Tag
 from src.app.models.user import User
 from src.app.utils.repository import Repository
+from src.app.models.permission import Permission
+from src.app.models.role import Role
+from src.app.models.role_permission import RolePermissionLink
+from src.app.models.user_role import UserRoleLink
+
+
+async def get_refresh_session_repository(session: SessionDep):
+    yield Repository[RefreshSession](session)
+
+
+type RefreshSessionRepository = Repository[RefreshSession]
+RefreshSessionRepositoryDep = Annotated[
+    RefreshSessionRepository, Depends(get_refresh_session_repository)
+]
 
 
 async def get_user_repository(session: SessionDep):
@@ -106,4 +121,41 @@ async def get_pomodoro_session_repository(session: SessionDep):
 type PomodoroSessionRepository = Repository[PomodoroSession]
 PomodoroSessionRepositoryDep = Annotated[
     PomodoroSessionRepository, Depends(get_pomodoro_session_repository)
+]
+
+async def get_permission_repository(session: SessionDep):
+    yield Repository[Permission](session)
+
+
+type PermissionRepository = Repository[Permission]
+PermissionRepositoryDep = Annotated[
+    PermissionRepository, Depends(get_permission_repository)
+]
+
+
+async def get_role_repository(session: SessionDep):
+    yield Repository[Role](session)
+
+
+type RoleRepository = Repository[Role]
+RoleRepositoryDep = Annotated[RoleRepository, Depends(get_role_repository)]
+
+
+async def get_user_role_repository(session: SessionDep):
+    yield Repository[UserRoleLink](session)
+
+
+type UserRoleRepository = Repository[UserRoleLink]
+UserRoleRepositoryDep = Annotated[
+    UserRoleRepository, Depends(get_user_role_repository)
+]
+
+
+async def get_role_permission_repository(session: SessionDep):
+    yield Repository[RolePermissionLink](session)
+
+
+type RolePermissionRepository = Repository[RolePermissionLink]
+RolePermissionRepositoryDep = Annotated[
+    RolePermissionRepository, Depends(get_role_permission_repository)
 ]
