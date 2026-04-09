@@ -216,7 +216,6 @@ class AuthService:
             )
 
         safe_user_id = user.id
-
         access_jti = uuid4()
         refresh_jti = uuid4()
 
@@ -302,7 +301,6 @@ class AuthService:
             )
 
         safe_user_id = user.id
-
         new_access_jti = uuid4()
         new_refresh_jti = uuid4()
 
@@ -478,7 +476,6 @@ class AuthService:
         access_jti: UUID,
     ) -> RefreshSession:
         payload = decode_token(refresh_token)
-
         exp = payload.get('exp')
 
         if exp is None:

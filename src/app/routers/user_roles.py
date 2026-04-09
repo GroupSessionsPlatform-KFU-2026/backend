@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Security, status
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.repositories import (
     RoleRepositoryDep,
     UserRepositoryDep,
@@ -9,7 +10,6 @@ from src.app.dependencies.repositories import (
 )
 from src.app.dependencies.security import require_scoped_user
 from src.app.models.user_role import UserRoleLink
-from src.app.core.responses import auth_responses, detail_responses
 from src.app.utils.errors import NotFoundError
 
 router = APIRouter(

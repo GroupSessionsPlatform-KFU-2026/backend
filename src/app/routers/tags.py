@@ -9,6 +9,7 @@ from src.app.models.tag import TagCreate, TagPublic, TagUpdate
 from src.app.schemas.tag_filters import TagFilters
 from src.app.core.responses import auth_responses, detail_responses
 from src.app.utils.errors import NotFoundError
+from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
 
 router = APIRouter(
     prefix='/tags',
@@ -20,8 +21,16 @@ router = APIRouter(
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
     tag_service: TagServiceDep,
-) -> Sequence[TagPublic]:
-    return await tag_service.get_tags(filters)
+) -> PaginatedResponse[TagPublic]:
+    tags = await tag_service.get_tags(filters)
+    total = await tag_service.count_tags(filters)
+
+    return build_paginated_response(
+        items=list(tags),
+        total=total,
+        offset=filters.offset,
+        limit=filters.limit,
+    )
 
 
 @router.post('/', dependencies=[Security(require_scoped_user, scopes=['tags:write'])], responses=auth_responses,)

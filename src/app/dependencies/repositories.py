@@ -12,11 +12,9 @@ from src.app.models.pomodoro_session import PomodoroSession
 from src.app.models.project import Project
 from src.app.models.project_tag import ProjectTag
 from src.app.models.refresh_session import RefreshSession
-<<<<<<< HEAD
+
 from src.app.models.role import Role
 from src.app.models.role_permission import RolePermissionLink
-=======
->>>>>>> 4ae6b89 (feature:dependency and service jwt)
 from src.app.models.room import Room
 from src.app.models.room_participant import RoomParticipant
 from src.app.models.tag import Tag

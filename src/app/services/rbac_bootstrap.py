@@ -46,7 +46,6 @@ class RBACBootstrapService:
 
     async def bootstrap(self) -> None:
         print('RBAC bootstrap started')
-
         permissions = await self.__ensure_permissions()
 
         admin_role = await self.__ensure_role(settings.rbac.admin_role)
@@ -61,9 +60,7 @@ class RBACBootstrapService:
 
         admin_user = await self.__ensure_admin_user()
         await self.__assign_role_to_user(admin_user.id, admin_role.id)
-
         print('RBAC bootstrap finished')
-
     async def __ensure_permissions(self) -> dict[str, UUID]:
         existing_permissions = await self.__permission_repository.fetch(limit=1000)
         permissions_by_scope: dict[str, UUID] = {
@@ -156,3 +153,5 @@ class RBACBootstrapService:
 
         link = UserRoleLink(user_id=user_id, role_id=role_id)
         await self.__user_role_repository.save(link)
+        await self.__user_role_repository.save(link)
+

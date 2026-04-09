@@ -29,7 +29,7 @@ class Permission(PermissionPublic, table=True):
         back_populates='permissions',
         link_model=RolePermissionLink,
     )
-
+    
     @property
     def scope(self) -> str:
         return f'{self.subject}:{self.action}'

@@ -5,7 +5,10 @@ from src.app.dependencies.repositories import UserRepository, UserRepositoryDep
 from src.app.models.user import User, UserCreate, UserUpdate
 from src.app.schemas.user_filters import UserFilters
 from src.app.utils.hashing import get_password_hash, verify_password
+<<<<<<< HEAD
 
+=======
+>>>>>>> af316e3 (auth + RBAC)
 
 class UserService:
     __user_repository: UserRepository
@@ -37,6 +40,10 @@ class UserService:
             is_active=True,
         )
 
+<<<<<<< HEAD
+=======
+        user = User(**user_dump, password_hash=password_hash, is_active=True)
+>>>>>>> af316e3 (auth + RBAC)
         return await self.__user_repository.save(user)
 
     def verify_user_password(self, raw_password: str, password_hash: str) -> bool:

@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from fastapi import APIRouter, Cookie, Query, Request, Response, status, Depends
 =======
 <<<<<<< HEAD
@@ -10,11 +11,15 @@ from fastapi import APIRouter, Cookie, Request, Response, status
 from fastapi import APIRouter, Cookie, Response, status
 >>>>>>> 781d067 (clean alembic history and finalize jwt auth)
 >>>>>>> 87f016b (clean alembic history and finalize jwt auth)
+=======
+from fastapi import APIRouter, Cookie, Depends, Request, Response, status
+>>>>>>> af316e3 (auth + RBAC)
 
 from src.app.core.limiter import limiter
 from src.app.core.responses import auth_responses, conflict_responses
 from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
+<<<<<<< HEAD
 from src.app.dependencies.services import get_auth_service
 from src.app.services.auth import AuthService
 from src.app.models.user import UserCreate
@@ -24,6 +29,10 @@ from src.app.schemas.security import (
     RegisterResponse,
     TokenData,
 )
+=======
+from src.app.models.user import UserCreate
+from src.app.dependencies.services import AuthServiceDep
+>>>>>>> af316e3 (auth + RBAC)
 
 router = APIRouter(
     prefix='/auth',
@@ -49,18 +58,19 @@ CONFIRM_RESET_RESPONSES = {
 @router.post(
     '/register',
     status_code=status.HTTP_201_CREATED,
-<<<<<<< HEAD
     responses=conflict_responses,
 )
 @limiter.limit(settings.rate_limit.auth)
-=======
-)
->>>>>>> 781d067 (clean alembic history and finalize jwt auth)
 async def register(
     request: Request,
     user_create: UserCreate,
+<<<<<<< HEAD
     auth_service: AuthService = Depends(get_auth_service),
 ) -> RegisterResponse:
+=======
+    auth_service: AuthServiceDep
+):
+>>>>>>> af316e3 (auth + RBAC)
     return await auth_service.register(user_create)
 
 
@@ -73,19 +83,20 @@ async def login(
     request: Request,
     response: Response,
     user: AuthenticatedUserDep,
+<<<<<<< HEAD
     auth_service: AuthService = Depends(get_auth_service),
 ) -> TokenData:
+=======
+    auth_service: AuthServiceDep
+):
+>>>>>>> af316e3 (auth + RBAC)
     token_data = await auth_service.login(user)
 
     response.set_cookie(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-<<<<<<< HEAD
         secure=settings.auth.cookie_secure,
-=======
-        secure=False,  # TODO: set True in production (HTTPS)
->>>>>>> 781d067 (clean alembic history and finalize jwt auth)
         samesite='lax',
         path='/',
     )
@@ -108,11 +119,7 @@ async def refresh(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-<<<<<<< HEAD
         secure=settings.auth.cookie_secure,
-=======
-        secure=False,  # TODO: set True in production (HTTPS)
->>>>>>> 781d067 (clean alembic history and finalize jwt auth)
         samesite='lax',
         path='/',
     )
