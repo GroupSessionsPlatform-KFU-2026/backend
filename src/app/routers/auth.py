@@ -27,8 +27,8 @@ async def register(
 @router.post('/login')
 async def login(
     response: Response,
-    auth_service: AuthServiceDep,
     user: AuthenticatedUserDep,
+    auth_service: AuthServiceDep,
 ) -> TokenData:
     token_data = await auth_service.login(user)
 
