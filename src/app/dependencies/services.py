@@ -41,7 +41,6 @@ from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
 
-
 UserServiceDep = Annotated[UserService, Depends(UserService)]
 
 
@@ -98,6 +97,13 @@ def get_auth_service(
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 RoomAccessServiceDep = Annotated[RoomAccessService, Depends(RoomAccessService)]
+from src.app.services.rbac_bootstrap import RBACBootstrapService
+from src.app.services.users import UserService
+from typing import Annotated
+from fastapi import Depends
+
+AuthServiceDep = Annotated[AuthService, Depends()]
+UserServiceDep = Annotated[UserService, Depends()]
 ProjectServiceDep = Annotated[ProjectService, Depends(ProjectService)]
 TagServiceDep = Annotated[TagService, Depends(TagService)]
 RoomServiceDep = Annotated[RoomService, Depends(RoomService)]

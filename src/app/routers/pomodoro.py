@@ -1,8 +1,8 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.room_access import require_pomodoro_moderation_access
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import PomodoroSessionServiceDep
@@ -10,7 +10,6 @@ from src.app.models.pomodoro_session import (
     PomodoroSessionPublic,
     PomodoroSessionUpdate,
 )
-from src.app.core.responses import auth_responses, detail_responses
 from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
@@ -72,7 +71,8 @@ async def update_pomodoro_settings(
             require_pomodoro_moderation_access,
             scopes=['pomodoro:write'],
         )
-    ], responses={
+    ],
+    responses={
         **auth_responses,
         **detail_responses,
     },

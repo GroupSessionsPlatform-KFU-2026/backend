@@ -54,7 +54,11 @@ class AuthService:
     __refresh_session_repository: RefreshSessionRepository
     __role_repository: RoleRepository
     __user_role_repository: UserRoleRepository
+<<<<<<< HEAD
     __email_notification_repository: EmailNotificationRepository
+=======
+    __user_service: UserService
+>>>>>>> 75525e9 (fix:auth)
 
     def __init__(
         self,
@@ -476,6 +480,7 @@ class AuthService:
         access_jti: UUID,
     ) -> RefreshSession:
         payload = decode_token(refresh_token)
+
         exp = payload.get('exp')
 
         if exp is None:

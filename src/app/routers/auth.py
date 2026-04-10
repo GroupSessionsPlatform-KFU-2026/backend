@@ -20,6 +20,7 @@ from src.app.core.responses import auth_responses, conflict_responses
 from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
 <<<<<<< HEAD
+<<<<<<< HEAD
 from src.app.dependencies.services import get_auth_service
 from src.app.services.auth import AuthService
 from src.app.models.user import UserCreate
@@ -33,6 +34,11 @@ from src.app.schemas.security import (
 from src.app.models.user import UserCreate
 from src.app.dependencies.services import AuthServiceDep
 >>>>>>> af316e3 (auth + RBAC)
+=======
+from src.app.dependencies.services import get_auth_service
+from src.app.models.user import UserCreate
+from src.app.services.auth import AuthService
+>>>>>>> 75525e9 (fix:auth)
 
 router = APIRouter(
     prefix='/auth',
@@ -65,10 +71,14 @@ async def register(
     request: Request,
     user_create: UserCreate,
 <<<<<<< HEAD
+<<<<<<< HEAD
     auth_service: AuthService = Depends(get_auth_service),
 ) -> RegisterResponse:
 =======
     auth_service: AuthServiceDep
+=======
+    auth_service: AuthService = Depends(get_auth_service),
+>>>>>>> 75525e9 (fix:auth)
 ):
 >>>>>>> af316e3 (auth + RBAC)
     return await auth_service.register(user_create)
@@ -84,10 +94,14 @@ async def login(
     response: Response,
     user: AuthenticatedUserDep,
 <<<<<<< HEAD
+<<<<<<< HEAD
     auth_service: AuthService = Depends(get_auth_service),
 ) -> TokenData:
 =======
     auth_service: AuthServiceDep
+=======
+    auth_service: AuthService = Depends(get_auth_service),
+>>>>>>> 75525e9 (fix:auth)
 ):
 >>>>>>> af316e3 (auth + RBAC)
     token_data = await auth_service.login(user)

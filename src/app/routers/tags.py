@@ -1,15 +1,15 @@
-from typing import Annotated, Optional, Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import TagServiceDep
 from src.app.models.tag import TagCreate, TagPublic, TagUpdate
-from src.app.schemas.tag_filters import TagFilters
-from src.app.core.responses import auth_responses, detail_responses
-from src.app.utils.errors import NotFoundError
 from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
+from src.app.schemas.tag_filters import TagFilters
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/tags',
@@ -17,7 +17,11 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[Security(require_scoped_user, scopes=['tags:read'])], responses=auth_responses,)
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['tags:read'])],
+    responses=auth_responses,
+)
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
     tag_service: TagServiceDep,
@@ -33,7 +37,11 @@ async def get_tags(
     )
 
 
-@router.post('/', dependencies=[Security(require_scoped_user, scopes=['tags:write'])], responses=auth_responses,)
+@router.post(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['tags:write'])],
+    responses=auth_responses,
+)
 async def create_tag(
     tag_create: TagCreate,
     tag_service: TagServiceDep,

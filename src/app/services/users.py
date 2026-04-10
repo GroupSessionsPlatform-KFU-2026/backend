@@ -10,6 +10,7 @@ from src.app.utils.hashing import get_password_hash, verify_password
 =======
 >>>>>>> af316e3 (auth + RBAC)
 
+
 class UserService:
     __user_repository: UserRepository
 
@@ -41,9 +42,12 @@ class UserService:
         )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         user = User(**user_dump, password_hash=password_hash, is_active=True)
 >>>>>>> af316e3 (auth + RBAC)
+=======
+>>>>>>> 75525e9 (fix:auth)
         return await self.__user_repository.save(user)
 
     def verify_user_password(self, raw_password: str, password_hash: str) -> bool:

@@ -1,8 +1,9 @@
-from typing import Annotated, Optional, Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.room_access import require_message_manage_access
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import ChatMessageServiceDep
@@ -13,9 +14,8 @@ from src.app.models.chat_message import (
 )
 from src.app.models.user import User as UserModel
 from src.app.schemas.chat_message_filters import ChatMessageFilters
-from src.app.core.responses import auth_responses, detail_responses
-from src.app.utils.errors import NotFoundError
 from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/rooms/{room_id}/messages',
@@ -44,7 +44,10 @@ async def get_room_messages(
     )
 
 
-@router.post('/', responses=auth_responses,)
+@router.post(
+    '/',
+    responses=auth_responses,
+)
 async def create_message(
     room_id: UUID,
     message_create: ChatMessageCreate,
@@ -70,7 +73,8 @@ async def create_message(
             require_message_manage_access,
             scopes=['chat:write'],
         )
-    ], responses={
+    ],
+    responses={
         **auth_responses,
         **detail_responses,
     },
@@ -96,7 +100,8 @@ async def update_message(
             require_message_manage_access,
             scopes=['chat:delete'],
         )
-    ], responses={
+    ],
+    responses={
         **auth_responses,
         **detail_responses,
     },

@@ -7,10 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AuthSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix='AUTH_',
-        env_file='.env',
-        extra='ignore',
     )
-
     secret: str = 'secret'
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
@@ -34,10 +31,7 @@ class DBSettings(BaseSettings):
 class RBACSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix='RBAC_',
-        env_file='.env',
-        extra='ignore',
     )
-
     admin_email: str = 'admin@example.com'
     admin_password: str = 'admin123456'
     admin_role: str = 'admin'
