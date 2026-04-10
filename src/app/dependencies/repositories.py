@@ -98,7 +98,9 @@ async def get_board_element_repository(session: SessionDep):
 
 type BoardElementRepository = Repository[BoardElement]
 BoardElementRepositoryDep = Annotated[
-    BoardElementRepository, Depends(get_board_element_repository)
+    BoardElementRepo
+42
+sitory, Depends(get_board_element_repository)
 ]
 
 

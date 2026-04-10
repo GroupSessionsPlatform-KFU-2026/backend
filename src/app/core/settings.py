@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()
     rbac: RBACSettings = RBACSettings()
 
+    db: DBSettings = DBSettings()
+    auth: AuthSettings = AuthSettings()
+    rbac: RBACSettings = RBACSettings()
+
 
 @lru_cache
 def get_settings() -> Settings:
