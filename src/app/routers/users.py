@@ -1,15 +1,11 @@
-from typing import Optional, Annotated
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter
 
-from src.app.services.users import UserService
+from src.app.dependencies.security import CurrentProfileUserDep, CurrentUsersReadUserDep
+from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import UserPublic
-
-from fastapi import Security
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
-
 
 router = APIRouter(
     prefix='/users',
@@ -19,7 +15,7 @@ router = APIRouter(
 
 @router.get('/me')
 async def get_me(
-    current_user: User = Security(get_current_user, scopes=['users:read']),
+    current_user: CurrentProfileUserDep,
 ) -> UserPublic:
     return current_user
 
@@ -27,7 +23,7 @@ async def get_me(
 @router.get('/{user_id}')
 async def get_user(
     user_id: UUID,
-    user_service: UserService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['users:read']),
+    user_service: UserServiceDep,
+    _current_user: CurrentUsersReadUserDep,
 ) -> Optional[UserPublic]:
     return await user_service.get_user(user_id)
