@@ -50,7 +50,10 @@ class RBACBootstrapService:
         permissions = await self.__ensure_permissions()
 
         admin_role = await self.__ensure_role(settings.rbac.admin_role)
+        admin_role_id = admin_role.id
+
         public_role = await self.__ensure_role(settings.rbac.public_role)
+        admin_role_id = admin_role.id
 
         await self.__assign_all_permissions_to_role(admin_role.id, permissions)
         await self.__assign_scopes_to_role(
@@ -60,6 +63,7 @@ class RBACBootstrapService:
         )
 
         admin_user = await self.__ensure_admin_user()
+        admin_role_id = admin_role.id
         await self.__assign_role_to_user(admin_user.id, admin_role.id)
 
         print("RBAC bootstrap finished")

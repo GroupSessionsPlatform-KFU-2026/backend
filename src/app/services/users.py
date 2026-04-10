@@ -27,9 +27,16 @@ class UserService:
 
     async def create_user(self, user_create: UserCreate) -> User:
         user_dump = user_create.model_dump()
+
         password = str(user_dump.pop('password'))
         password_hash = get_password_hash(password)
-        user = User(**user_dump, password_hash=password_hash, is_active=True)
+
+        user = User(
+            **user_dump,
+            password_hash=password_hash,
+            is_active=True,
+        )
+
         return await self.__user_repository.save(user)
 
     async def get_user(self, user_id: UUID) -> Optional[User]:
