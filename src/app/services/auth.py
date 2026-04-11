@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 
@@ -115,21 +115,37 @@ class AuthService:
             )
 
         user_id = payload.get('sub')
-        if user_id is None:
+        access_jti = payload.get('jti')
+
+        if user_id is None or access_jti is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Authentication credentials were not provided or are invalid',
             )
 
         try:
-            user = await self.__user_repository.get_by_id_with_roles_permissions(
-                UUID(user_id),
-            )
+            user_uuid = UUID(str(user_id))
+            access_jti_uuid = UUID(str(access_jti))
         except ValueError as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Authentication credentials were not provided or are invalid',
             ) from error
+
+        refresh_session = await self.__refresh_session_repository.get_one_by_filters(
+            extra_filters={'access_jti': access_jti_uuid},
+        )
+        if (
+            refresh_session is None
+            or refresh_session.is_revoked
+            or refresh_session.user_id != user_uuid
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Authentication credentials were not provided or are invalid',
+            )
+
+        user = await self.__user_repository.get_by_id_with_roles_permissions(user_uuid)
 
         if user is None or not user.is_active:
             raise HTTPException(
@@ -157,13 +173,21 @@ class AuthService:
 
         safe_user_id = user.id
 
-        access_token = create_access_token(user)
-        refresh_token = create_refresh_token(user)
+        access_jti = uuid4()
+        refresh_jti = uuid4()
+
+        access_token = create_access_token(user, access_jti)
+        refresh_token = create_refresh_token(user, refresh_jti)
 
         user.last_login_at = datetime.now(timezone.utc)
         await self.__user_repository.save(user)
 
-        await self.__create_refresh_session(safe_user_id, refresh_token)
+        await self.__create_refresh_session(
+            user_id=safe_user_id,
+            refresh_token=refresh_token,
+            refresh_jti=refresh_jti,
+            access_jti=access_jti,
+        )
 
         return TokenData(
             access_token=access_token,
@@ -178,7 +202,7 @@ class AuthService:
                 detail='Refresh token was not provided',
             )
 
-        payload = decode_token(refresh_token)
+        payload = decode_token(refresh_token, verify_exp=False)
 
         if payload.get('token_type') != 'refresh':
             raise HTTPException(
@@ -187,18 +211,31 @@ class AuthService:
             )
 
         user_id = payload.get('sub')
-        jti = payload.get('jti')
+        refresh_jti = payload.get('jti')
 
-        if user_id is None or jti is None:
+        if user_id is None or refresh_jti is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Invalid refresh token',
             )
 
+        try:
+            user_uuid = UUID(str(user_id))
+            refresh_jti_uuid = UUID(str(refresh_jti))
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Invalid refresh token',
+            ) from error
+
         refresh_session = await self.__refresh_session_repository.get_one_by_filters(
-            extra_filters={'jti': str(jti)},
+            extra_filters={'refresh_jti': refresh_jti_uuid},
         )
-        if refresh_session is None or refresh_session.is_revoked:
+        if (
+            refresh_session is None
+            or refresh_session.is_revoked
+            or refresh_session.user_id != user_uuid
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Refresh session is invalid',
@@ -213,7 +250,7 @@ class AuthService:
                 detail='Refresh token expired',
             )
 
-        user = await self.__user_repository.get(UUID(user_id))
+        user = await self.__user_repository.get(user_uuid)
         if user is None or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -222,13 +259,21 @@ class AuthService:
 
         safe_user_id = user.id
 
-        access_token = create_access_token(user)
-        new_refresh_token = create_refresh_token(user)
+        new_access_jti = uuid4()
+        new_refresh_jti = uuid4()
+
+        access_token = create_access_token(user, new_access_jti)
+        new_refresh_token = create_refresh_token(user, new_refresh_jti)
 
         refresh_session.is_revoked = True
         await self.__refresh_session_repository.save(refresh_session)
 
-        await self.__create_refresh_session(safe_user_id, new_refresh_token)
+        await self.__create_refresh_session(
+            user_id=safe_user_id,
+            refresh_token=new_refresh_token,
+            refresh_jti=new_refresh_jti,
+            access_jti=new_access_jti,
+        )
 
         return TokenData(
             access_token=access_token,
@@ -244,16 +289,31 @@ class AuthService:
             )
 
         payload = decode_token(refresh_token, verify_exp=False)
-        jti = payload.get('jti')
 
-        if jti is None:
+        if payload.get('token_type') != 'refresh':
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Invalid refresh token',
             )
 
+        refresh_jti = payload.get('jti')
+
+        if refresh_jti is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Invalid refresh token',
+            )
+
+        try:
+            refresh_jti_uuid = UUID(str(refresh_jti))
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Invalid refresh token',
+            ) from error
+
         refresh_session = await self.__refresh_session_repository.get_one_by_filters(
-            extra_filters={'jti': str(jti)},
+            extra_filters={'refresh_jti': refresh_jti_uuid},
         )
 
         if refresh_session is not None and not refresh_session.is_revoked:
@@ -271,13 +331,14 @@ class AuthService:
         self,
         user_id: UUID,
         refresh_token: str,
+        refresh_jti: UUID,
+        access_jti: UUID,
     ) -> RefreshSession:
         payload = decode_token(refresh_token)
 
-        jti = payload.get('jti')
         exp = payload.get('exp')
 
-        if jti is None or exp is None:
+        if exp is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Invalid refresh token payload',
@@ -287,7 +348,8 @@ class AuthService:
 
         refresh_session = RefreshSession(
             user_id=user_id,
-            jti=str(jti),
+            refresh_jti=refresh_jti,
+            access_jti=access_jti,
             expires_at=expires_at,
             is_revoked=False,
         )

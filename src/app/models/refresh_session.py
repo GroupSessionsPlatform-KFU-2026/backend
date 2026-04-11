@@ -15,16 +15,24 @@ class RefreshSession(BaseModel, table=True):
         nullable=False,
         index=True,
     )
-    jti: str = Field(
+
+    refresh_jti: UUID = Field(
         nullable=False,
         unique=True,
         index=True,
-        max_length=255,
     )
+
+    access_jti: UUID = Field(
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
     expires_at: datetime = Field(
         nullable=False,
         sa_type=TIMESTAMP(timezone=True),
     )
+
     is_revoked: bool = Field(
         default=False,
         nullable=False,

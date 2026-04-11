@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from uuid import uuid4
+from uuid import UUID
 
 import jwt
 from fastapi import HTTPException, status
@@ -20,6 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 def _create_token(
     data: dict[str, Any],
     expires_delta: timedelta,
+    jti: UUID,
 ) -> str:
     to_encode = data.copy()
 
@@ -30,7 +31,7 @@ def _create_token(
         {
             'iat': now,
             'exp': expire,
-            'jti': str(uuid4()),
+            'jti': str(jti),
         }
     )
 
@@ -43,6 +44,7 @@ def _create_token(
 
 def create_access_token(
     user: UserModel,
+    jti: UUID,
     expires_delta: timedelta | None = None,
 ) -> str:
     lifetime = expires_delta or timedelta(
@@ -55,11 +57,13 @@ def create_access_token(
             'token_type': 'access',
         },
         expires_delta=lifetime,
+        jti=jti,
     )
 
 
 def create_refresh_token(
     user: UserModel,
+    jti: UUID,
     expires_delta: timedelta | None = None,
 ) -> str:
     lifetime = expires_delta or timedelta(
@@ -72,6 +76,7 @@ def create_refresh_token(
             'token_type': 'refresh',
         },
         expires_delta=lifetime,
+        jti=jti,
     )
 
 
