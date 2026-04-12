@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -43,8 +43,14 @@ class RoomUpdate(RoomBase):
     pass
 
 
-class Room(RoomPublic, table=True):
+class Room(RoomBase, BaseModel, table=True):
     __tablename__ = 'room'
+
+    project_id: UUID = Field(foreign_key='project.id', nullable=False)
+    creator_id: UUID = Field(foreign_key='user.id', nullable=False)
+    room_code: str
+    ended_at: datetime | None = None
+    status: RoomStatus
 
     project: 'Project' = Relationship(back_populates='rooms')
     creator: 'User' = Relationship(back_populates='created_rooms')

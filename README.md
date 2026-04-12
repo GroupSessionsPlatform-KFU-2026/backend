@@ -42,8 +42,16 @@
 | DB_USER           | Имя пользователя в БД     | Строка                | postgres              |
 | DB_PASSWORD       | Пароль БД                 | Строка                | pass                  |
 | DB_NAME           | Название БД               | Строка                | db                    |
+| AUTH_SECRET | Секрет для создания JWT-токенов | Строка | secret |
+| AUTH_ACCESS_TOKEN_LIFETIME_SECONDS | Время жизни access-токенов в секундах | Число | 300 |
+| AUTH_REFRESH_TOKEN_LIFETIME_SECONDS | Время жизни refresh-токенов в секундах | Число | 600 |
+| AUTH_TOKEN_ALGORITHM | Алгоритм шифрования JWT-токенов | Строка | HS256 |
 
 ---
+Для генерации AUTH_SECRET можно использовать openssl
+```bash
+openssh rand -hex 32
+```
 
 # Инструкции по запуску
 ## Пререквизиты

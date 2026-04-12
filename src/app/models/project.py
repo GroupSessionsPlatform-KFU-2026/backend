@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
 
@@ -31,6 +31,8 @@ class ProjectUpdate(ProjectBase):
 
 class Project(ProjectPublic, table=True):
     __tablename__ = 'project'
+
+    owner_id: UUID = Field(foreign_key='user.id', nullable=False)
 
     owner: 'User' = Relationship(back_populates='projects')
     tags: list['ProjectTag'] = Relationship(back_populates='project')
