@@ -7,7 +7,9 @@ from src.app.sockets.manager import SocketConnectionManager
 
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # TODO: restrict in production
+    cors_allowed_origins='*',
+    logger=True,
+    engineio_logger=True,
 )
 
 socket_manager = SocketConnectionManager(sio=sio)
@@ -16,7 +18,6 @@ socket_manager = SocketConnectionManager(sio=sio)
 @sio.event
 async def connect(sid: str, environ: dict, auth: dict | None):
     _ = environ
-
     await socket_manager.register_connection(sid)
 
     try:
