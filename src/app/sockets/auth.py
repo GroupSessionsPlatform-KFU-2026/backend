@@ -8,6 +8,7 @@ from src.app.models.refresh_session import RefreshSession
 from src.app.models.role import Role
 from src.app.models.room import Room, RoomStatus
 from src.app.models.room_participant import RoomParticipant
+from src.app.models.user import User
 from src.app.models.user_role import UserRoleLink
 from src.app.services.auth import AuthService
 from src.app.services.users import UserService
@@ -20,6 +21,7 @@ class SocketAuthContext:
     user_id: UUID
     room_id: UUID
     role: str
+    scopes: list[str]
 
 
 def _extract_access_token(auth: object) -> str:
@@ -45,6 +47,13 @@ def _extract_room_id(auth: object) -> UUID:
         return UUID(str(raw_room_id))
     except ValueError as error:
         raise SocketConnectionRefusedError('Invalid room id') from error
+
+
+def _collect_user_scopes(user: User) -> list[str]:
+    scopes = {
+        permission.scope for role in user.roles for permission in role.permissions
+    }
+    return sorted(scopes)
 
 
 async def authenticate_socket_connection(auth: object) -> SocketAuthContext:
@@ -76,6 +85,8 @@ async def authenticate_socket_connection(auth: object) -> SocketAuthContext:
         except Exception as error:
             raise SocketConnectionRefusedError('Invalid access token') from error
 
+        scopes = _collect_user_scopes(user)
+
         room = await room_repository.get(room_id)
         if room is None:
             raise SocketConnectionRefusedError('Room not found')
@@ -88,6 +99,7 @@ async def authenticate_socket_connection(auth: object) -> SocketAuthContext:
                 user_id=user.id,
                 room_id=room.id,
                 role='owner',
+                scopes=scopes,
             )
 
         participants = await room_participant_repository.fetch(
@@ -113,4 +125,5 @@ async def authenticate_socket_connection(auth: object) -> SocketAuthContext:
             user_id=user.id,
             room_id=room.id,
             role=active_participant.role,
+            scopes=scopes,
         )

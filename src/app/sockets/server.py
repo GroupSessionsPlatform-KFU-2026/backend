@@ -3,11 +3,12 @@ from fastapi import FastAPI
 from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefusedError
 
 from src.app.sockets.auth import authenticate_socket_connection
+from src.app.sockets.events import register_chat_events
 from src.app.sockets.manager import SocketConnectionManager
 
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',
+    cors_allowed_origins='*',  # TODO: restrict in production
     logger=True,
     engineio_logger=True,
 )
@@ -36,6 +37,7 @@ async def connect(sid: str, environ: dict, auth: dict | None):
                 'user_id': str(context.user_id),
                 'room_id': str(context.room_id),
                 'role': context.role,
+                'scopes': context.scopes,
             },
         )
 
@@ -59,6 +61,9 @@ async def connect(sid: str, environ: dict, auth: dict | None):
 async def disconnect(sid: str, reason: str):
     _ = reason
     await socket_manager.disconnect(sid)
+
+
+register_chat_events(sio=sio, socket_manager=socket_manager)
 
 
 def create_socket_app(fastapi_app: FastAPI):
