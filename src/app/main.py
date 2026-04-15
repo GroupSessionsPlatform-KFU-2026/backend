@@ -9,7 +9,6 @@ from src.app.models.role import Role
 from src.app.models.role_permission import RolePermissionLink
 from src.app.models.user import User
 from src.app.models.user_role import UserRoleLink
-
 from src.app.routers import (
     auth,
     board,
@@ -20,10 +19,11 @@ from src.app.routers import (
     projects,
     rooms,
     tags,
+    user_roles,
     users,
-    user_roles
 )
 from src.app.services.rbac_bootstrap import RBACBootstrapService
+from src.app.sockets.server import create_socket_app
 from src.app.utils.repository import Repository
 
 
@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(
+fastapi_app = FastAPI(
     title='Group Sessions Platform API',
     version='1.1.0',
     lifespan=lifespan,
@@ -60,9 +60,12 @@ api_router.include_router(board_comments.router)
 api_router.include_router(pomodoro.router)
 api_router.include_router(user_roles.router)
 
-app.include_router(api_router)
+fastapi_app.include_router(api_router)
 
 
-@app.get('/health')
+@fastapi_app.get('/health')
 async def healthcheck():
     return {'status': 'ok'}
+
+
+app = create_socket_app(fastapi_app)
