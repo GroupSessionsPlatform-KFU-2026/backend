@@ -3,19 +3,6 @@ from uuid import UUID
 from src.app.sockets.manager import ConnectedClient, SocketConnectionManager
 
 
-async def emit_presence_snapshot_to_client(
-    socket_manager: SocketConnectionManager,
-    sid: str,
-    room_id: UUID,
-) -> None:
-    snapshot = socket_manager.build_presence_snapshot(room_id)
-    await socket_manager.emit_to_client(
-        sid=sid,
-        event='room.presence.snapshot',
-        data=snapshot,
-    )
-
-
 async def emit_presence_snapshot_to_room(
     socket_manager: SocketConnectionManager,
     room_id: UUID,

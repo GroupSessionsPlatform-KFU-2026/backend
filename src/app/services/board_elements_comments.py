@@ -67,7 +67,7 @@ class BoardElementCommentService:
         if element is None:
             return None
 
-        comment_dump = comment_create.model_dump()
+        comment_dump = comment_create.model_dump(exclude={'board_element_id'})
         comment = BoardElementComment(
             **comment_dump,
             board_element_id=element_id,
