@@ -7,6 +7,7 @@ from src.app.sockets.events import (
     register_board_comment_events,
     register_board_events,
     register_chat_events,
+    register_pomodoro_events,
 )
 from src.app.sockets.events.presence import (
     emit_participant_joined,
@@ -121,6 +122,7 @@ async def disconnect(sid: str, reason: str):
 register_chat_events(sio=sio, socket_manager=socket_manager)
 register_board_events(sio=sio, socket_manager=socket_manager)
 register_board_comment_events(sio=sio, socket_manager=socket_manager)
+register_pomodoro_events(sio=sio, socket_manager=socket_manager)
 
 
 def create_socket_app(fastapi_app: FastAPI):
