@@ -3,14 +3,18 @@ from fastapi import FastAPI
 from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefusedError
 
 from src.app.sockets.auth import authenticate_socket_connection
-from src.app.sockets.events import register_chat_events
+from src.app.sockets.events import (
+    emit_participant_joined,
+    emit_participant_left,
+    emit_presence_snapshot_to_client,
+    emit_presence_snapshot_to_room,
+    register_chat_events,
+)
 from src.app.sockets.manager import SocketConnectionManager
 
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',  # TODO: restrict in production
-    logger=True,
-    engineio_logger=True,
 )
 
 socket_manager = SocketConnectionManager(sio=sio)
@@ -19,12 +23,13 @@ socket_manager = SocketConnectionManager(sio=sio)
 @sio.event
 async def connect(sid: str, environ: dict, auth: dict | None):
     _ = environ
+
     await socket_manager.register_connection(sid)
 
     try:
         context = await authenticate_socket_connection(auth)
 
-        await socket_manager.attach_identity(
+        client = await socket_manager.attach_identity(
             sid=sid,
             user_id=context.user_id,
             room_id=context.room_id,
@@ -46,6 +51,30 @@ async def connect(sid: str, environ: dict, auth: dict | None):
             room_id=context.room_id,
         )
 
+        user_connections = socket_manager.count_user_connections_in_room(
+            room_id=context.room_id,
+            user_id=context.user_id,
+        )
+        is_first_connection_for_user = user_connections == 1
+
+        await emit_presence_snapshot_to_client(
+            socket_manager=socket_manager,
+            sid=sid,
+            room_id=context.room_id,
+        )
+
+        if is_first_connection_for_user:
+            await emit_participant_joined(
+                socket_manager=socket_manager,
+                client=client,
+                skip_sid=sid,
+            )
+
+        await emit_presence_snapshot_to_room(
+            socket_manager=socket_manager,
+            room_id=context.room_id,
+        )
+
         return True
 
     except SocketConnectionRefusedError:
@@ -60,7 +89,36 @@ async def connect(sid: str, environ: dict, auth: dict | None):
 @sio.event
 async def disconnect(sid: str, reason: str):
     _ = reason
+
+    client = socket_manager.get_client(sid)
+    if client is None:
+        await socket_manager.disconnect(sid)
+        return
+
+    room_id = client.room_id
+    user_id = client.user_id
+
     await socket_manager.disconnect(sid)
+
+    if room_id is None or user_id is None:
+        return
+
+    remaining_connections = socket_manager.count_user_connections_in_room(
+        room_id=room_id,
+        user_id=user_id,
+    )
+    is_last_connection_for_user = remaining_connections == 0
+
+    if is_last_connection_for_user:
+        await emit_participant_left(
+            socket_manager=socket_manager,
+            client=client,
+        )
+
+    await emit_presence_snapshot_to_room(
+        socket_manager=socket_manager,
+        room_id=room_id,
+    )
 
 
 register_chat_events(sio=sio, socket_manager=socket_manager)

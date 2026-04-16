@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -18,8 +19,14 @@ class RoomParticipantBase(SQLModel):
 
 class RoomParticipantPublic(BaseModel, RoomParticipantBase):
     role: str
-    joined_at: datetime | None = None
-    left_at: datetime | None = None
+    joined_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
+    left_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
     is_kicked: bool
 
 
