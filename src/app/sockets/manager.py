@@ -41,6 +41,7 @@ class SocketConnectionManager:
                 continue
             if client.user_id in seen_user_ids:
                 continue
+
             seen_user_ids.add(client.user_id)
             unique_clients.append(client)
 
@@ -56,7 +57,6 @@ class SocketConnectionManager:
     @staticmethod
     def serialize_client(client: ConnectedClient) -> dict[str, str]:
         return {
-            'sid': client.sid,
             'user_id': str(client.user_id) if client.user_id else '',
             'room_id': str(client.room_id) if client.room_id else '',
             'role': client.role or '',

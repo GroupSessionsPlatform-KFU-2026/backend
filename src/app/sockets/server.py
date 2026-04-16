@@ -3,12 +3,11 @@ from fastapi import FastAPI
 from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefusedError
 
 from src.app.sockets.auth import authenticate_socket_connection
-from src.app.sockets.events import (
+from src.app.sockets.events import register_board_events, register_chat_events
+from src.app.sockets.events.presence import (
     emit_participant_joined,
     emit_participant_left,
-    emit_presence_snapshot_to_client,
     emit_presence_snapshot_to_room,
-    register_chat_events,
 )
 from src.app.sockets.manager import SocketConnectionManager
 
@@ -56,12 +55,6 @@ async def connect(sid: str, environ: dict, auth: dict | None):
             user_id=context.user_id,
         )
         is_first_connection_for_user = user_connections == 1
-
-        await emit_presence_snapshot_to_client(
-            socket_manager=socket_manager,
-            sid=sid,
-            room_id=context.room_id,
-        )
 
         if is_first_connection_for_user:
             await emit_participant_joined(
@@ -122,6 +115,7 @@ async def disconnect(sid: str, reason: str):
 
 
 register_chat_events(sio=sio, socket_manager=socket_manager)
+register_board_events(sio=sio, socket_manager=socket_manager)
 
 
 def create_socket_app(fastapi_app: FastAPI):
