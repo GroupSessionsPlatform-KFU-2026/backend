@@ -1,12 +1,14 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 
-from fastapi import APIRouter, Query, Security
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
-from src.app.services.tags import TagService
+from src.app.dependencies.security import (
+    CurrentUserTagsDeleteDep,
+    CurrentUserTagsReadDep,
+    CurrentUserTagsWriteDep,
+)
+from src.app.dependencies.services import TagServiceDep
 from src.app.models.tag import TagCreate, TagPublic, TagUpdate
 from src.app.schemas.tag_filters import TagFilters
 
@@ -19,8 +21,8 @@ router = APIRouter(
 @router.get('/')
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
-    tag_service: TagService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['tags:read']),
+    tag_service: TagServiceDep,
+    _current_user: CurrentUserTagsReadDep,
 ) -> Sequence[TagPublic]:
     return await tag_service.get_tags(filters)
 
@@ -28,8 +30,8 @@ async def get_tags(
 @router.post('/')
 async def create_tag(
     tag_create: TagCreate,
-    tag_service: TagService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['tags:write']),
+    tag_service: TagServiceDep,
+    _current_user: CurrentUserTagsWriteDep,
 ) -> TagPublic:
     return await tag_service.create_tag(tag_create)
 
@@ -37,8 +39,8 @@ async def create_tag(
 @router.get('/{tag_id}')
 async def get_tag(
     tag_id: UUID,
-    tag_service: TagService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['tags:read']),
+    tag_service: TagServiceDep,
+    _current_user: CurrentUserTagsReadDep,
 ) -> Optional[TagPublic]:
     return await tag_service.get_tag(tag_id)
 
@@ -47,8 +49,8 @@ async def get_tag(
 async def update_tag(
     tag_update: TagUpdate,
     tag_id: UUID,
-    tag_service: TagService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['tags:write']),
+    tag_service: TagServiceDep,
+    _current_user: CurrentUserTagsWriteDep,
 ) -> Optional[TagPublic]:
     return await tag_service.update_tag(tag_update, tag_id)
 
@@ -56,7 +58,7 @@ async def update_tag(
 @router.delete('/{tag_id}')
 async def delete_tag(
     tag_id: UUID,
-    tag_service: TagService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['tags:delete']),
+    tag_service: TagServiceDep,
+    _current_user: CurrentUserTagsDeleteDep,
 ) -> Optional[TagPublic]:
     return await tag_service.delete_tag(tag_id)
