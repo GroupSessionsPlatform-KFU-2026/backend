@@ -34,6 +34,7 @@ INITIAL_ROLE_SCOPES: dict[str, list[str]] = {
         'projects:read',
         'tags:read',
         'rooms:read',
+        'rooms:write',
         'participants:read',
         'chat:read',
         'board:read',

@@ -1,12 +1,16 @@
-from typing import Optional, Annotated
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from fastapi import Security
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
-from src.app.services.pomodoro_sessions import PomodoroSessionService
+from src.app.dependencies.security import (
+    CurrentUserPomodoroReadDep,
+    CurrentUserPomodoroWriteDep,
+)
+from src.app.dependencies.services import (
+    PomodoroSessionServiceDep,
+    RoomAccessServiceDep,
+)
 from src.app.models.pomodoro_session import (
     PomodoroSessionPublic,
     PomodoroSessionUpdate,
@@ -21,8 +25,8 @@ router = APIRouter(
 @router.get('/')
 async def get_room_pomodoro(
     room_id: UUID,
-    pomodoro_service: PomodoroSessionService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['pomodoro:read']),
+    pomodoro_service: PomodoroSessionServiceDep,
+    _current_user: CurrentUserPomodoroReadDep,
 ) -> Optional[PomodoroSessionPublic]:
     return await pomodoro_service.get_room_pomodoro(room_id)
 
@@ -31,38 +35,42 @@ async def get_room_pomodoro(
 async def update_pomodoro_settings(
     room_id: UUID,
     pomodoro_update: PomodoroSessionUpdate,
-    pomodoro_service: PomodoroSessionService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['pomodoro:write']),
+    pomodoro_service: PomodoroSessionServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserPomodoroWriteDep,
 ) -> Optional[PomodoroSessionPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
+    await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.update_room_pomodoro(room_id, pomodoro_update)
 
 
 @router.post('/start')
 async def start_pomodoro(
     room_id: UUID,
-    pomodoro_service: PomodoroSessionService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['pomodoro:write']),
+    pomodoro_service: PomodoroSessionServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserPomodoroWriteDep,
 ) -> Optional[PomodoroSessionPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
+    await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.start_pomodoro(room_id)
 
 
 @router.post('/pause')
 async def pause_pomodoro(
     room_id: UUID,
-    pomodoro_service: PomodoroSessionService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['pomodoro:write']),
+    pomodoro_service: PomodoroSessionServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserPomodoroWriteDep,
 ) -> Optional[PomodoroSessionPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
+    await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.pause_pomodoro(room_id)
 
 
 @router.post('/reset')
 async def reset_pomodoro(
     room_id: UUID,
-    pomodoro_service: PomodoroSessionService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['pomodoro:write']),
+    pomodoro_service: PomodoroSessionServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserPomodoroWriteDep,
 ) -> Optional[PomodoroSessionPublic]:
-    # TODO: validate room ownership/moderation after auth is implemented.
+    await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.reset_pomodoro(room_id)

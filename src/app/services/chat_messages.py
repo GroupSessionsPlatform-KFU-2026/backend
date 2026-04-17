@@ -27,7 +27,7 @@ class ChatMessageService:
     ) -> Sequence[ChatMessage]:
         return await self.__repository.fetch(
             filters=filters,
-            room_id=room_id,
+            extra_filters={'room_id': room_id},
             offset=filters.offset,
             limit=filters.limit,
         )
@@ -37,15 +37,15 @@ class ChatMessageService:
         room_id: UUID,
         message_create: ChatMessageCreate,
     ) -> ChatMessage:
-        message_dump = message_create.model_dump()
+        message_dump = message_create.model_dump(exclude={'room_id'})
+
         message = ChatMessage(
             **message_dump,
             room_id=room_id,
             created_at=datetime.now(timezone.utc),
             is_edited=False,
         )
-        # TODO: sender_id should come from the current authenticated
-        #  user after OAuth2 is implemented.
+
         return await self.__repository.save(message)
 
     async def get_message_in_room(
@@ -54,8 +54,10 @@ class ChatMessageService:
         message_id: UUID,
     ) -> Optional[ChatMessage]:
         messages = await self.__repository.fetch(
-            id=message_id,
-            room_id=room_id,
+            extra_filters={
+                'id': message_id,
+                'room_id': room_id,
+            },
             limit=1,
         )
         return messages[0] if messages else None

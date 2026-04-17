@@ -1,12 +1,14 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 
-from fastapi import Security
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
-from src.app.services.chat_messages import ChatMessageService
+from src.app.dependencies.security import (
+    CurrentUserChatDeleteDep,
+    CurrentUserChatReadDep,
+    CurrentUserChatWriteDep,
+)
+from src.app.dependencies.services import ChatMessageServiceDep, RoomAccessServiceDep
 from src.app.models.chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
@@ -24,8 +26,8 @@ router = APIRouter(
 async def get_room_messages(
     room_id: UUID,
     filters: Annotated[ChatMessageFilters, Query()],
-    chat_service: ChatMessageService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['chat:read']),
+    chat_service: ChatMessageServiceDep,
+    _current_user: CurrentUserChatReadDep,
 ) -> Sequence[ChatMessagePublic]:
     return await chat_service.get_messages(room_id, filters)
 
@@ -34,23 +36,28 @@ async def get_room_messages(
 async def create_message(
     room_id: UUID,
     message_create: ChatMessageCreate,
-    chat_service: ChatMessageService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['chat:write']),
+    chat_service: ChatMessageServiceDep,
+    current_user: CurrentUserChatWriteDep,
 ) -> ChatMessagePublic:
-    # TODO: sender_id should come from the current authenticated
-    #  user after OAuth2 is implemented.
+    message_create = message_create.model_copy(
+        update={
+            'room_id': room_id,
+            'sender_id': current_user.id,
+        }
+    )
     return await chat_service.create_message(room_id, message_create)
 
 
 @router.put('/{message_id}')
-async def update_message(
+async def update_message(  # noqa: PLR0913
     room_id: UUID,
     message_id: UUID,
     message_update: ChatMessageUpdate,
-    chat_service: ChatMessageService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['chat:write']),
+    chat_service: ChatMessageServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserChatWriteDep,
 ) -> Optional[ChatMessagePublic]:
-    # TODO: validate message ownership inside the room after OAuth2 is implemented.
+    await room_access.ensure_message_owner(room_id, message_id, current_user.id)
     return await chat_service.update_message(room_id, message_id, message_update)
 
 
@@ -58,8 +65,9 @@ async def update_message(
 async def delete_message(
     room_id: UUID,
     message_id: UUID,
-    chat_service: ChatMessageService = Depends(),
-    current_user: User = Security(get_current_user, scopes=['chat:delete']),
+    chat_service: ChatMessageServiceDep,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserChatDeleteDep,
 ) -> Optional[ChatMessagePublic]:
-    # TODO: validate message ownership inside the room after OAuth2 is implemented.
+    await room_access.ensure_message_owner(room_id, message_id, current_user.id)
     return await chat_service.delete_message(room_id, message_id)

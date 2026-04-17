@@ -26,7 +26,9 @@ class BoardElementService:
     ) -> Sequence[BoardElement]:
         return await self.__repository.fetch(
             filters=filters,
-            room_id=room_id,
+            extra_filters={
+                'room_id': room_id,
+            },
             offset=filters.offset,
             limit=filters.limit,
         )
@@ -36,19 +38,19 @@ class BoardElementService:
         room_id: UUID,
         element_id: UUID,
     ) -> Optional[BoardElement]:
-        elements = await self.__repository.fetch(
-            room_id=room_id,
-            id=element_id,
-            limit=1,
+        return await self.__repository.get_one_by_filters(
+            extra_filters={
+                'room_id': room_id,
+                'id': element_id,
+            },
         )
-        return elements[0] if elements else None
 
     async def create_element(
         self,
         room_id: UUID,
         element_create: BoardElementCreate,
     ) -> BoardElement:
-        element_dump = element_create.model_dump()
+        element_dump = element_create.model_dump(exclude={'room_id'})
         element = BoardElement(
             **element_dump,
             room_id=room_id,
