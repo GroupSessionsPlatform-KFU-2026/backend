@@ -112,13 +112,24 @@ async def _get_active_room(
     return room
 
 
-def _require_message_owner(
+def _ensure_can_edit_message(
     sender_id: UUID,
     user_id: UUID,
-    action: str,
+    role: str,
 ) -> None:
-    if sender_id != user_id:
-        raise ChatEventError(f'You can {action} only your own messages')
+    can_edit = sender_id == user_id or role in {'owner', 'moderator'}
+    if not can_edit:
+        raise ChatEventError('You cannot edit this message')
+
+
+def _ensure_can_delete_message(
+    sender_id: UUID,
+    user_id: UUID,
+    role: str,
+) -> None:
+    can_delete = sender_id == user_id or role in {'owner', 'moderator'}
+    if not can_delete:
+        raise ChatEventError('You cannot delete this message')
 
 
 async def _handle_chat_send(
@@ -169,7 +180,7 @@ async def _handle_chat_update(
 ) -> dict[str, object]:
     message_id = _extract_message_id(data)
     content = _extract_content(data)
-    user_id, room_id, _role, scopes = await _require_identity(socket_manager, sid)
+    user_id, room_id, role, scopes = await _require_identity(socket_manager, sid)
     _require_scope(scopes, 'chat:write')
 
     async with async_session_maker() as db_session:
@@ -186,7 +197,7 @@ async def _handle_chat_update(
         if existing_message is None:
             raise ChatEventError('Message not found')
 
-        _require_message_owner(existing_message.sender_id, user_id, 'edit')
+        _ensure_can_edit_message(existing_message.sender_id, user_id, role)
 
         updated_message = await chat_service.update_message(
             room_id=room_id,
@@ -217,7 +228,7 @@ async def _handle_chat_delete(
     data: dict | None,
 ) -> dict[str, object]:
     message_id = _extract_message_id(data)
-    user_id, room_id, _role, scopes = await _require_identity(socket_manager, sid)
+    user_id, room_id, role, scopes = await _require_identity(socket_manager, sid)
     _require_scope(scopes, 'chat:delete')
 
     async with async_session_maker() as db_session:
@@ -234,7 +245,7 @@ async def _handle_chat_delete(
         if existing_message is None:
             raise ChatEventError('Message not found')
 
-        _require_message_owner(existing_message.sender_id, user_id, 'delete')
+        _ensure_can_delete_message(existing_message.sender_id, user_id, role)
 
         deleted_message = await chat_service.delete_message(
             room_id=room_id,

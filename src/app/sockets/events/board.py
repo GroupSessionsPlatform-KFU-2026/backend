@@ -187,9 +187,16 @@ async def _require_existing_element(
     return existing_element
 
 
-def _ensure_can_edit(existing_element: BoardElement, user_id: UUID) -> None:
-    if existing_element.author_id != user_id:
-        raise BoardSocketError('You can edit only your own elements')
+def _ensure_can_edit(
+    existing_element: BoardElement,
+    identity: SocketIdentity,
+) -> None:
+    can_edit = existing_element.author_id == identity.user_id or identity.role in {
+        'owner',
+        'moderator',
+    }
+    if not can_edit:
+        raise BoardSocketError('You cannot edit this element')
 
 
 def _ensure_can_delete(
@@ -259,7 +266,7 @@ async def _handle_board_element_update(
                 room_id=identity.room_id,
                 element_id=element_id,
             )
-            _ensure_can_edit(existing_element, identity.user_id)
+            _ensure_can_edit(existing_element, identity)
 
             updated_element = await board_service.update_element(
                 room_id=identity.room_id,

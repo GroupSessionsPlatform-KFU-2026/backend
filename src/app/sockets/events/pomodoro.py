@@ -5,8 +5,8 @@ from uuid import UUID
 import socketio
 
 from src.app.dependencies.session import async_session_maker
+from src.app.models.pomodoro_session import PomodoroSession, PomodoroSessionUpdate
 from src.app.models.room import Room, RoomStatus
-from src.app.schemas.pomodoro import PomodoroSessionUpdate
 from src.app.services.pomodoro_sessions import PomodoroSessionService
 from src.app.sockets.manager import SocketConnectionManager
 from src.app.utils.repository import Repository
@@ -75,6 +75,15 @@ async def _require_identity(
     return identity
 
 
+def _has_scope(scopes: list[str], required_scope: str) -> bool:
+    return required_scope in scopes
+
+
+def _ensure_scope(scopes: list[str], required_scope: str) -> None:
+    if not _has_scope(scopes, required_scope):
+        raise PomodoroSocketError(f'Missing required scope: {required_scope}')
+
+
 def _can_control_pomodoro(role: str) -> bool:
     return role in {'owner', 'moderator'}
 
@@ -123,14 +132,14 @@ def _parse_settings_update(payload: dict[str, Any]) -> PomodoroSessionUpdate:
 
 def _build_repositories(
     db_session: Any,
-) -> tuple[Repository[Room], Repository[Any]]:
+) -> tuple[Repository[Room], Repository[PomodoroSession]]:
     room_repository = Repository[Room](db_session)
-    pomodoro_repository = Repository[Any](db_session)
+    pomodoro_repository = Repository[PomodoroSession](db_session)
     return room_repository, pomodoro_repository
 
 
 def _build_service(
-    pomodoro_repository: Repository[Any],
+    pomodoro_repository: Repository[PomodoroSession],
 ) -> PomodoroSessionService:
     return PomodoroSessionService(repository=pomodoro_repository)
 
@@ -160,7 +169,7 @@ async def _get_state_payload(
     pomodoro_service: PomodoroSessionService,
     room_id: UUID,
 ) -> dict[str, Any]:
-    pomodoro = await pomodoro_service.get_pomodoro_by_room_id(room_id)
+    pomodoro = await pomodoro_service.get_room_pomodoro(room_id)
     if pomodoro is None:
         raise PomodoroSocketError('Pomodoro session not found')
     return pomodoro.model_dump(mode='json')
@@ -184,6 +193,7 @@ async def _handle_pomodoro_state_get(
 ) -> dict[str, Any]:
     try:
         identity = await _require_identity(socket_manager, sid)
+        _ensure_scope(identity.scopes, 'pomodoro:read')
 
         async with async_session_maker() as db_session:
             room_repository, pomodoro_service = await _load_room_and_service(db_session)
@@ -206,6 +216,7 @@ async def _handle_pomodoro_settings_update(
     try:
         payload = _require_payload_dict(data)
         identity = await _require_identity(socket_manager, sid)
+        _ensure_scope(identity.scopes, 'pomodoro:write')
         _ensure_can_control(identity.role)
 
         pomodoro_update = _parse_settings_update(payload)
@@ -214,9 +225,9 @@ async def _handle_pomodoro_settings_update(
             room_repository, pomodoro_service = await _load_room_and_service(db_session)
             await _ensure_room_is_active(room_repository, identity.room_id)
 
-            updated_pomodoro = await pomodoro_service.update_pomodoro_by_room_id(
+            updated_pomodoro = await pomodoro_service.update_room_pomodoro(
                 room_id=identity.room_id,
-                payload=pomodoro_update,
+                pomodoro_update=pomodoro_update,
             )
             if updated_pomodoro is None:
                 raise PomodoroSocketError('Pomodoro session not found')
@@ -239,6 +250,7 @@ async def _handle_pomodoro_start(
 ) -> dict[str, Any]:
     try:
         identity = await _require_identity(socket_manager, sid)
+        _ensure_scope(identity.scopes, 'pomodoro:write')
         _ensure_can_control(identity.role)
 
         async with async_session_maker() as db_session:
@@ -269,6 +281,7 @@ async def _handle_pomodoro_pause(
 ) -> dict[str, Any]:
     try:
         identity = await _require_identity(socket_manager, sid)
+        _ensure_scope(identity.scopes, 'pomodoro:write')
         _ensure_can_control(identity.role)
 
         async with async_session_maker() as db_session:
@@ -299,6 +312,7 @@ async def _handle_pomodoro_reset(
 ) -> dict[str, Any]:
     try:
         identity = await _require_identity(socket_manager, sid)
+        _ensure_scope(identity.scopes, 'pomodoro:write')
         _ensure_can_control(identity.role)
 
         async with async_session_maker() as db_session:

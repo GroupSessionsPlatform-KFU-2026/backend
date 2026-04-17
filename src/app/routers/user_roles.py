@@ -1,14 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status
+from fastapi import APIRouter, HTTPException, status
 
 from src.app.dependencies.repositories import (
     RoleRepositoryDep,
     UserRepositoryDep,
     UserRoleRepositoryDep,
 )
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
+from src.app.dependencies.security import CurrentUserUsersWriteDep
 from src.app.models.user_role import UserRoleLink
 
 router = APIRouter(
@@ -24,7 +23,7 @@ async def assign_role_to_user(
     user_repository: UserRepositoryDep,
     role_repository: RoleRepositoryDep,
     user_role_repository: UserRoleRepositoryDep,
-    current_user: User = Security(get_current_user, scopes=['users:write']),
+    _current_user: CurrentUserUsersWriteDep,
 ):
     user = await user_repository.get(user_id)
     if user is None:

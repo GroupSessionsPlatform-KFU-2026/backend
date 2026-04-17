@@ -160,10 +160,14 @@ async def _require_existing_comment(
 
 def _ensure_can_edit(
     existing_comment: BoardElementComment,
-    user_id: UUID,
+    identity: SocketIdentity,
 ) -> None:
-    if existing_comment.author_id != user_id:
-        raise BoardCommentSocketError('You can edit only your own comments')
+    can_edit = existing_comment.author_id == identity.user_id or identity.role in {
+        'owner',
+        'moderator',
+    }
+    if not can_edit:
+        raise BoardCommentSocketError('You cannot edit this comment')
 
 
 def _ensure_can_delete(
@@ -264,7 +268,7 @@ async def _handle_board_comment_update(
                 element_id=element_id,
                 comment_id=comment_id,
             )
-            _ensure_can_edit(existing_comment, identity.user_id)
+            _ensure_can_edit(existing_comment, identity)
 
             updated_comment = await comment_service.update_comment(
                 room_id=identity.room_id,

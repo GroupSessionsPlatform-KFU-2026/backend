@@ -9,6 +9,7 @@ class AuthSettings(BaseModel):
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
     token_algorithm: str = 'HS256'
+    cookie_secure: bool = False
 
 
 class DBSettings(BaseModel):

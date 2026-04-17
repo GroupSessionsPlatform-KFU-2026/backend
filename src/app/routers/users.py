@@ -1,16 +1,11 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from src.app.dependencies.security import CurrentProfileUserDep, CurrentUsersReadUserDep
 from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import UserPublic
-
-from fastapi import Security
-from src.app.dependencies.security import get_current_user
-from src.app.models.user import User
-
 
 router = APIRouter(
     prefix='/users',
