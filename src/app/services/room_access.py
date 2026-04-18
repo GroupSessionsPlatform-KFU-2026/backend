@@ -53,9 +53,6 @@ class RoomAccessService:
 
         return participant.role
 
-    async def ensure_room_access(self, room_id: UUID, user_id: UUID) -> None:
-        await self.get_actor_role(room_id, user_id)
-
     async def ensure_can_moderate(self, room_id: UUID, user_id: UUID) -> None:
         role = await self.get_actor_role(room_id, user_id)
         if role not in {'owner', 'moderator'}:

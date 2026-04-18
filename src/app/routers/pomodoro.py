@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter
 
-from src.app.dependencies.security import (
-    CurrentUserPomodoroReadDep,
-    CurrentUserPomodoroWriteDep,
+from src.app.dependencies.route_guards import (
+    CurrentPomodoroWriteUserDep,
+    PomodoroReadGuard,
 )
 from src.app.dependencies.services import (
     PomodoroSessionServiceDep,
@@ -22,11 +22,10 @@ router = APIRouter(
 )
 
 
-@router.get('/')
+@router.get('/', dependencies=[PomodoroReadGuard])
 async def get_room_pomodoro(
     room_id: UUID,
     pomodoro_service: PomodoroSessionServiceDep,
-    _current_user: CurrentUserPomodoroReadDep,
 ) -> Optional[PomodoroSessionPublic]:
     return await pomodoro_service.get_room_pomodoro(room_id)
 
@@ -37,7 +36,7 @@ async def update_pomodoro_settings(
     pomodoro_update: PomodoroSessionUpdate,
     pomodoro_service: PomodoroSessionServiceDep,
     room_access: RoomAccessServiceDep,
-    current_user: CurrentUserPomodoroWriteDep,
+    current_user: CurrentPomodoroWriteUserDep,
 ) -> Optional[PomodoroSessionPublic]:
     await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.update_room_pomodoro(room_id, pomodoro_update)
@@ -48,7 +47,7 @@ async def start_pomodoro(
     room_id: UUID,
     pomodoro_service: PomodoroSessionServiceDep,
     room_access: RoomAccessServiceDep,
-    current_user: CurrentUserPomodoroWriteDep,
+    current_user: CurrentPomodoroWriteUserDep,
 ) -> Optional[PomodoroSessionPublic]:
     await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.start_pomodoro(room_id)
@@ -59,7 +58,7 @@ async def pause_pomodoro(
     room_id: UUID,
     pomodoro_service: PomodoroSessionServiceDep,
     room_access: RoomAccessServiceDep,
-    current_user: CurrentUserPomodoroWriteDep,
+    current_user: CurrentPomodoroWriteUserDep,
 ) -> Optional[PomodoroSessionPublic]:
     await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.pause_pomodoro(room_id)
@@ -70,7 +69,7 @@ async def reset_pomodoro(
     room_id: UUID,
     pomodoro_service: PomodoroSessionServiceDep,
     room_access: RoomAccessServiceDep,
-    current_user: CurrentUserPomodoroWriteDep,
+    current_user: CurrentPomodoroWriteUserDep,
 ) -> Optional[PomodoroSessionPublic]:
     await room_access.ensure_can_moderate(room_id, current_user.id)
     return await pomodoro_service.reset_pomodoro(room_id)

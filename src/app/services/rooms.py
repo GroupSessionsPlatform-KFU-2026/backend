@@ -6,13 +6,19 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from src.app.dependencies.session import SessionDep
+from src.app.dependencies.repositories import (
+    PomodoroSessionRepository,
+    PomodoroSessionRepositoryDep,
+    RoomParticipantRepository,
+    RoomParticipantRepositoryDep,
+    RoomRepository,
+    RoomRepositoryDep,
+)
 from src.app.models.pomodoro_session import PomodoroPhase, PomodoroSession
 from src.app.models.room import Room, RoomCreate, RoomStatus, RoomUpdate
 from src.app.models.room_participant import RoomParticipant
 from src.app.schemas.room_filters import RoomFilters
 from src.app.schemas.room_request import JoinRoomRequest
-from src.app.utils.repository import Repository
 
 
 def generate_room_code(length: int = 6) -> str:
@@ -21,10 +27,19 @@ def generate_room_code(length: int = 6) -> str:
 
 
 class RoomService:
-    def __init__(self, session: SessionDep):
-        self.__session = session
-        self.__room_repository = Repository[Room](session)
-        self.__room_participant_repository = Repository[RoomParticipant](session)
+    __room_repository: RoomRepository
+    __room_participant_repository: RoomParticipantRepository
+    __pomodoro_repository: PomodoroSessionRepository
+
+    def __init__(
+        self,
+        room_repository: RoomRepositoryDep,
+        room_participant_repository: RoomParticipantRepositoryDep,
+        pomodoro_repository: PomodoroSessionRepositoryDep,
+    ):
+        self.__room_repository = room_repository
+        self.__room_participant_repository = room_participant_repository
+        self.__pomodoro_repository = pomodoro_repository
 
     async def get_rooms(self, filters: RoomFilters) -> Sequence[Room]:
         return await self.__room_repository.fetch(
@@ -44,26 +59,23 @@ class RoomService:
             ended_at=None,
         )
 
-        async with self.__session.begin():
-            self.__session.add(room)
-            await self.__session.flush()
+        saved_room = await self.__room_repository.save(room)
 
-            pomodoro = PomodoroSession(
-                room_id=room.id,
-                work_duration=25,
-                short_break_duration=5,
-                long_break_duration=15,
-                cycles_before_long=4,
-                current_phase=PomodoroPhase.WORK,
-                completed_cycles=0,
-                is_running=False,
-                phase_ends_at=None,
-                session_ends_at=None,
-            )
-            self.__session.add(pomodoro)
+        pomodoro = PomodoroSession(
+            room_id=saved_room.id,
+            work_duration=25,
+            short_break_duration=5,
+            long_break_duration=15,
+            cycles_before_long=4,
+            current_phase=PomodoroPhase.WORK,
+            completed_cycles=0,
+            is_running=False,
+            phase_ends_at=None,
+            session_ends_at=None,
+        )
+        await self.__pomodoro_repository.save(pomodoro)
 
-        await self.__session.refresh(room)
-        return room
+        return saved_room
 
     async def get_room(self, room_id: UUID) -> Optional[Room]:
         return await self.__room_repository.get(room_id)

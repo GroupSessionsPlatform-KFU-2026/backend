@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -28,8 +29,14 @@ class PomodoroSessionPublic(BaseModel, PomodoroSessionBase):
     room_id: UUID
     current_phase: PomodoroPhase
     completed_cycles: int
-    phase_ends_at: datetime | None = None
-    session_ends_at: datetime | None = None
+    phase_ends_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
+    session_ends_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
     is_running: bool
 
 

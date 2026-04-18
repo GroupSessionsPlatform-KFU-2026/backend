@@ -3,12 +3,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from src.app.dependencies.security import (
-    CurrentUserChatDeleteDep,
-    CurrentUserChatReadDep,
-    CurrentUserChatWriteDep,
+from src.app.dependencies.route_guards import (
+    ChatReadGuard,
+    CurrentChatDeleteUserDep,
+    CurrentChatWriteUserDep,
 )
-from src.app.dependencies.services import ChatMessageServiceDep, RoomAccessServiceDep
+from src.app.dependencies.router_bundles import MessageMutationDepsDep
+from src.app.dependencies.services import ChatMessageServiceDep
 from src.app.models.chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
@@ -22,12 +23,11 @@ router = APIRouter(
 )
 
 
-@router.get('/')
+@router.get('/', dependencies=[ChatReadGuard])
 async def get_room_messages(
     room_id: UUID,
     filters: Annotated[ChatMessageFilters, Query()],
     chat_service: ChatMessageServiceDep,
-    _current_user: CurrentUserChatReadDep,
 ) -> Sequence[ChatMessagePublic]:
     return await chat_service.get_messages(room_id, filters)
 
@@ -37,7 +37,7 @@ async def create_message(
     room_id: UUID,
     message_create: ChatMessageCreate,
     chat_service: ChatMessageServiceDep,
-    current_user: CurrentUserChatWriteDep,
+    current_user: CurrentChatWriteUserDep,
 ) -> ChatMessagePublic:
     message_create = message_create.model_copy(
         update={
@@ -49,25 +49,31 @@ async def create_message(
 
 
 @router.put('/{message_id}')
-async def update_message(  # noqa: PLR0913
+async def update_message(
     room_id: UUID,
     message_id: UUID,
     message_update: ChatMessageUpdate,
-    chat_service: ChatMessageServiceDep,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserChatWriteDep,
+    deps: MessageMutationDepsDep,
+    current_user: CurrentChatWriteUserDep,
 ) -> Optional[ChatMessagePublic]:
-    await room_access.ensure_message_owner(room_id, message_id, current_user.id)
-    return await chat_service.update_message(room_id, message_id, message_update)
+    await deps.room_access.ensure_message_manage(
+        room_id=room_id,
+        message_id=message_id,
+        user_id=current_user.id,
+    )
+    return await deps.chat_service.update_message(room_id, message_id, message_update)
 
 
 @router.delete('/{message_id}')
 async def delete_message(
     room_id: UUID,
     message_id: UUID,
-    chat_service: ChatMessageServiceDep,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserChatDeleteDep,
+    deps: MessageMutationDepsDep,
+    current_user: CurrentChatDeleteUserDep,
 ) -> Optional[ChatMessagePublic]:
-    await room_access.ensure_message_owner(room_id, message_id, current_user.id)
-    return await chat_service.delete_message(room_id, message_id)
+    await deps.room_access.ensure_message_manage(
+        room_id=room_id,
+        message_id=message_id,
+        user_id=current_user.id,
+    )
+    return await deps.chat_service.delete_message(room_id, message_id)

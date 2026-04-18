@@ -3,10 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from src.app.dependencies.security import (
-    CurrentUserRoomsDeleteDep,
-    CurrentUserRoomsReadDep,
-    CurrentUserRoomsWriteDep,
+from src.app.dependencies.route_guards import (
+    CurrentRoomDeleteUserDep,
+    CurrentRoomWriteUserDep,
+    RoomsReadGuard,
 )
 from src.app.dependencies.services import RoomServiceDep
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
@@ -19,11 +19,10 @@ router = APIRouter(
 )
 
 
-@router.get('/')
+@router.get('/', dependencies=[RoomsReadGuard])
 async def get_rooms(
     filters: Annotated[RoomFilters, Query()],
     room_service: RoomServiceDep,
-    _current_user: CurrentUserRoomsReadDep,
 ) -> Sequence[RoomPublic]:
     return await room_service.get_rooms(filters)
 
@@ -32,7 +31,7 @@ async def get_rooms(
 async def create_room(
     room_create: RoomCreate,
     room_service: RoomServiceDep,
-    current_user: CurrentUserRoomsWriteDep,
+    current_user: CurrentRoomWriteUserDep,
 ) -> RoomPublic:
     return await room_service.create_room(room_create, current_user.id)
 
@@ -41,7 +40,7 @@ async def create_room(
 async def join_room(
     payload: JoinRoomRequest,
     room_service: RoomServiceDep,
-    current_user: CurrentUserRoomsWriteDep,
+    current_user: CurrentRoomWriteUserDep,
 ):
     return await room_service.join_room(payload, current_user.id)
 
@@ -51,13 +50,15 @@ async def update_room(
     room_update: RoomUpdate,
     room_id: UUID,
     room_service: RoomServiceDep,
-    current_user: CurrentUserRoomsWriteDep,
+    current_user: CurrentRoomWriteUserDep,
 ) -> Optional[RoomPublic]:
     return await room_service.update_room(room_update, room_id, current_user.id)
 
 
 @router.delete('/{room_id}')
 async def end_room(
-    room_id: UUID, room_service: RoomServiceDep, current_user: CurrentUserRoomsDeleteDep
+    room_id: UUID,
+    room_service: RoomServiceDep,
+    current_user: CurrentRoomDeleteUserDep,
 ) -> Optional[RoomPublic]:
     return await room_service.end_room(room_id, current_user.id)

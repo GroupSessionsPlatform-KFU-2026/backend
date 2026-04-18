@@ -85,7 +85,7 @@ class PomodoroSessionService:
         if session is None:
             return None
 
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(timezone.utc)
 
         if session.current_phase == PomodoroPhase.SHORT_BREAK:
             duration = session.short_break_duration

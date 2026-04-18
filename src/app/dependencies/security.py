@@ -49,104 +49,17 @@ CurrentUsersReadUserDep = Annotated[
     Security(get_current_user, scopes=['users:read']),
 ]
 
-CurrentUserTagsReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['tags:read']),
-]
-
-CurrentUserTagsWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['tags:write']),
-]
-
-CurrentUserTagsDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['tags:delete']),
-]
-
-CurrentUserProfileReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['profile:read']),
-]
-CurrentUserProfileWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['profile:write']),
-]
-
-CurrentUserProjectsReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['projects:read']),
-]
-CurrentUserProjectsWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['projects:write']),
-]
-CurrentUserProjectsDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['projects:delete']),
-]
-
-CurrentUserRoomsReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['rooms:read']),
-]
-CurrentUserRoomsWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['rooms:write']),
-]
-CurrentUserRoomsDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['rooms:delete']),
-]
-
-CurrentUserParticipantsReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['participants:read']),
-]
-CurrentUserParticipantsWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['participants:write']),
-]
-CurrentUserParticipantsDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['participants:delete']),
-]
-
-CurrentUserChatReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['chat:read']),
-]
-CurrentUserChatWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['chat:write']),
-]
-CurrentUserChatDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['chat:delete']),
-]
-
 CurrentUserBoardReadDep = Annotated[
     UserModel,
     Security(get_current_user, scopes=['board:read']),
 ]
+
 CurrentUserBoardWriteDep = Annotated[
     UserModel,
     Security(get_current_user, scopes=['board:write']),
 ]
+
 CurrentUserBoardDeleteDep = Annotated[
     UserModel,
     Security(get_current_user, scopes=['board:delete']),
-]
-
-CurrentUserPomodoroReadDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['pomodoro:read']),
-]
-CurrentUserPomodoroWriteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['pomodoro:write']),
-]
-CurrentUserPomodoroDeleteDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['pomodoro:delete']),
 ]
