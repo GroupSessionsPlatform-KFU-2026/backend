@@ -1,22 +1,17 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import (
-    CurrentUserBoardDeleteDep,
-    CurrentUserBoardReadDep,
-    CurrentUserBoardWriteDep,
-)
-from src.app.dependencies.services import (
-    BoardElementCommentServiceDep,
-    RoomAccessServiceDep,
-)
+from src.app.dependencies.room_access import require_comment_manage_access
+from src.app.dependencies.security import require_scoped_user
+from src.app.dependencies.services import BoardElementCommentServiceDep
 from src.app.models.board_element_comment import (
     BoardElementCommentCreate,
     BoardElementCommentPublic,
     BoardElementCommentUpdate,
 )
+from src.app.models.user import User as UserModel
 from src.app.schemas.board_element_comment_filters import BoardElementCommentFilters
 
 router = APIRouter(
@@ -25,43 +20,15 @@ router = APIRouter(
 )
 
 
-async def require_comment_write_access(
-    room_id: UUID,
-    element_id: UUID,
-    comment_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserBoardWriteDep,
-) -> None:
-    await room_access.ensure_comment_manage(
-        room_id,
-        element_id,
-        comment_id,
-        current_user.id,
-    )
-
-
-async def require_comment_delete_access(
-    room_id: UUID,
-    element_id: UUID,
-    comment_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserBoardDeleteDep,
-) -> None:
-    await room_access.ensure_comment_manage(
-        room_id,
-        element_id,
-        comment_id,
-        current_user.id,
-    )
-
-
-@router.get('/')
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['board:read'])],
+)
 async def get_board_element_comments(
     room_id: UUID,
     element_id: UUID,
     filters: Annotated[BoardElementCommentFilters, Query()],
     comment_service: BoardElementCommentServiceDep,
-    _current_user: CurrentUserBoardReadDep,
 ) -> Sequence[BoardElementCommentPublic]:
     return await comment_service.get_comments(room_id, element_id, filters)
 
@@ -72,7 +39,10 @@ async def create_board_element_comment(
     element_id: UUID,
     comment_create: BoardElementCommentCreate,
     comment_service: BoardElementCommentServiceDep,
-    current_user: CurrentUserBoardWriteDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['board:write']),
+    ],
 ) -> Optional[BoardElementCommentPublic]:
     comment_create = comment_create.model_copy(
         update={
@@ -85,7 +55,12 @@ async def create_board_element_comment(
 
 @router.put(
     '/{comment_id}',
-    dependencies=[Depends(require_comment_write_access)],
+    dependencies=[
+        Security(
+            require_comment_manage_access,
+            scopes=['board:write'],
+        )
+    ],
 )
 async def update_board_element_comment(
     room_id: UUID,
@@ -104,7 +79,12 @@ async def update_board_element_comment(
 
 @router.delete(
     '/{comment_id}',
-    dependencies=[Depends(require_comment_delete_access)],
+    dependencies=[
+        Security(
+            require_comment_manage_access,
+            scopes=['board:delete'],
+        )
+    ],
 )
 async def delete_board_element_comment(
     room_id: UUID,

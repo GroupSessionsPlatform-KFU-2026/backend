@@ -1,17 +1,11 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import (
-    CurrentUserParticipantsDeleteDep,
-    CurrentUserParticipantsReadDep,
-    CurrentUserParticipantsWriteDep,
-)
-from src.app.dependencies.services import (
-    RoomAccessServiceDep,
-    RoomParticipantServiceDep,
-)
+from src.app.dependencies.room_access import require_room_moderation_access
+from src.app.dependencies.security import require_scoped_user
+from src.app.dependencies.services import RoomParticipantServiceDep
 from src.app.models.room_participant import RoomParticipantPublic, RoomParticipantUpdate
 from src.app.schemas.room_participant_filters import RoomParticipantFilters
 
@@ -21,35 +15,26 @@ router = APIRouter(
 )
 
 
-async def require_participants_write_access(
-    room_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserParticipantsWriteDep,
-) -> None:
-    await room_access.ensure_can_moderate(room_id, current_user.id)
-
-
-async def require_participants_delete_access(
-    room_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserParticipantsDeleteDep,
-) -> None:
-    await room_access.ensure_can_moderate(room_id, current_user.id)
-
-
-@router.get('/')
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['participants:read'])],
+)
 async def get_room_participants(
     room_id: UUID,
     filters: Annotated[RoomParticipantFilters, Query()],
     participant_service: RoomParticipantServiceDep,
-    _current_user: CurrentUserParticipantsReadDep,
 ) -> Sequence[RoomParticipantPublic]:
     return await participant_service.get_participants(room_id, filters)
 
 
 @router.patch(
     '/{user_id}',
-    dependencies=[Depends(require_participants_write_access)],
+    dependencies=[
+        Security(
+            require_room_moderation_access,
+            scopes=['participants:write'],
+        )
+    ],
 )
 async def update_participant(
     room_id: UUID,
@@ -66,7 +51,12 @@ async def update_participant(
 
 @router.delete(
     '/{user_id}',
-    dependencies=[Depends(require_participants_delete_access)],
+    dependencies=[
+        Security(
+            require_room_moderation_access,
+            scopes=['participants:delete'],
+        )
+    ],
 )
 async def remove_participant(
     room_id: UUID,

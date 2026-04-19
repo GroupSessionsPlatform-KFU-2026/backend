@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import get_current_user
+from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import TagServiceDep
 from src.app.models.tag import TagCreate, TagPublic, TagUpdate
 from src.app.schemas.tag_filters import TagFilters
@@ -14,7 +14,7 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[Security(get_current_user, scopes=['tags:read'])])
+@router.get('/', dependencies=[Security(require_scoped_user, scopes=['tags:read'])])
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
     tag_service: TagServiceDep,
@@ -22,7 +22,7 @@ async def get_tags(
     return await tag_service.get_tags(filters)
 
 
-@router.post('/', dependencies=[Security(get_current_user, scopes=['tags:write'])])
+@router.post('/', dependencies=[Security(require_scoped_user, scopes=['tags:write'])])
 async def create_tag(
     tag_create: TagCreate,
     tag_service: TagServiceDep,
@@ -31,7 +31,8 @@ async def create_tag(
 
 
 @router.get(
-    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:read'])]
+    '/{tag_id}',
+    dependencies=[Security(require_scoped_user, scopes=['tags:read'])],
 )
 async def get_tag(
     tag_id: UUID,
@@ -41,7 +42,8 @@ async def get_tag(
 
 
 @router.put(
-    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:write'])]
+    '/{tag_id}',
+    dependencies=[Security(require_scoped_user, scopes=['tags:write'])],
 )
 async def update_tag(
     tag_update: TagUpdate,
@@ -52,7 +54,8 @@ async def update_tag(
 
 
 @router.delete(
-    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:delete'])]
+    '/{tag_id}',
+    dependencies=[Security(require_scoped_user, scopes=['tags:delete'])],
 )
 async def delete_tag(
     tag_id: UUID,

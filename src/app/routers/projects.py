@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import get_current_user
+from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import ProjectServiceDep
 from src.app.models.project import ProjectCreate, ProjectPublic, ProjectUpdate
 from src.app.models.project_tag import ProjectTagPublic
@@ -15,7 +15,10 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[Security(get_current_user, scopes=['projects:read'])])
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['projects:read'])],
+)
 async def get_projects(
     filters: Annotated[ProjectFilters, Query()],
     project_service: ProjectServiceDep,
@@ -23,7 +26,10 @@ async def get_projects(
     return await project_service.get_projects(filters)
 
 
-@router.post('/', dependencies=[Security(get_current_user, scopes=['projects:write'])])
+@router.post(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['projects:write'])],
+)
 async def create_project(
     project_create: ProjectCreate,
     project_service: ProjectServiceDep,
@@ -32,7 +38,8 @@ async def create_project(
 
 
 @router.get(
-    '/{project_id}', dependencies=[Security(get_current_user, scopes=['projects:read'])]
+    '/{project_id}',
+    dependencies=[Security(require_scoped_user, scopes=['projects:read'])],
 )
 async def get_project(
     project_id: UUID,
@@ -43,7 +50,7 @@ async def get_project(
 
 @router.put(
     '/{project_id}',
-    dependencies=[Security(get_current_user, scopes=['projects:write'])],
+    dependencies=[Security(require_scoped_user, scopes=['projects:write'])],
 )
 async def update_project(
     project_update: ProjectUpdate,
@@ -55,7 +62,7 @@ async def update_project(
 
 @router.delete(
     '/{project_id}',
-    dependencies=[Security(get_current_user, scopes=['projects:delete'])],
+    dependencies=[Security(require_scoped_user, scopes=['projects:delete'])],
 )
 async def archive_project(
     project_id: UUID,
@@ -66,7 +73,7 @@ async def archive_project(
 
 @router.get(
     '/{project_id}/tags',
-    dependencies=[Security(get_current_user, scopes=['projects:read'])],
+    dependencies=[Security(require_scoped_user, scopes=['projects:read'])],
 )
 async def get_project_tags(
     project_id: UUID,
@@ -77,7 +84,7 @@ async def get_project_tags(
 
 @router.post(
     '/{project_id}/tags/{tag_id}',
-    dependencies=[Security(get_current_user, scopes=['projects:write'])],
+    dependencies=[Security(require_scoped_user, scopes=['projects:write'])],
 )
 async def assign_tag_to_project(
     project_id: UUID,
@@ -89,7 +96,7 @@ async def assign_tag_to_project(
 
 @router.delete(
     '/{project_id}/tags/{tag_id}',
-    dependencies=[Security(get_current_user, scopes=['projects:write'])],
+    dependencies=[Security(require_scoped_user, scopes=['projects:write'])],
 )
 async def remove_tag_from_project(
     project_id: UUID,

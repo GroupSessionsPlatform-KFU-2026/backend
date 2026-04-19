@@ -1,19 +1,17 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import (
-    CurrentUserChatDeleteDep,
-    CurrentUserChatReadDep,
-    CurrentUserChatWriteDep,
-)
-from src.app.dependencies.services import ChatMessageServiceDep, RoomAccessServiceDep
+from src.app.dependencies.room_access import require_message_manage_access
+from src.app.dependencies.security import require_scoped_user
+from src.app.dependencies.services import ChatMessageServiceDep
 from src.app.models.chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
     ChatMessageUpdate,
 )
+from src.app.models.user import User as UserModel
 from src.app.schemas.chat_message_filters import ChatMessageFilters
 
 router = APIRouter(
@@ -22,38 +20,14 @@ router = APIRouter(
 )
 
 
-async def require_message_write_access(
-    room_id: UUID,
-    message_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserChatWriteDep,
-) -> None:
-    await room_access.ensure_message_manage(
-        room_id,
-        message_id,
-        current_user.id,
-    )
-
-
-async def require_message_delete_access(
-    room_id: UUID,
-    message_id: UUID,
-    room_access: RoomAccessServiceDep,
-    current_user: CurrentUserChatDeleteDep,
-) -> None:
-    await room_access.ensure_message_manage(
-        room_id,
-        message_id,
-        current_user.id,
-    )
-
-
-@router.get('/')
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['chat:read'])],
+)
 async def get_room_messages(
     room_id: UUID,
     filters: Annotated[ChatMessageFilters, Query()],
     chat_service: ChatMessageServiceDep,
-    _current_user: CurrentUserChatReadDep,
 ) -> Sequence[ChatMessagePublic]:
     return await chat_service.get_messages(room_id, filters)
 
@@ -63,7 +37,10 @@ async def create_message(
     room_id: UUID,
     message_create: ChatMessageCreate,
     chat_service: ChatMessageServiceDep,
-    current_user: CurrentUserChatWriteDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['chat:write']),
+    ],
 ) -> ChatMessagePublic:
     message_create = message_create.model_copy(
         update={
@@ -76,7 +53,12 @@ async def create_message(
 
 @router.put(
     '/{message_id}',
-    dependencies=[Depends(require_message_write_access)],
+    dependencies=[
+        Security(
+            require_message_manage_access,
+            scopes=['chat:write'],
+        )
+    ],
 )
 async def update_message(
     room_id: UUID,
@@ -89,7 +71,12 @@ async def update_message(
 
 @router.delete(
     '/{message_id}',
-    dependencies=[Depends(require_message_delete_access)],
+    dependencies=[
+        Security(
+            require_message_manage_access,
+            scopes=['chat:delete'],
+        )
+    ],
 )
 async def delete_message(
     room_id: UUID,

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.security import get_current_user
+from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import RoomServiceDep
 from src.app.models.room import RoomCreate, RoomPublic, RoomUpdate
 from src.app.models.user import User as UserModel
@@ -15,18 +15,8 @@ router = APIRouter(
     tags=['rooms'],
 )
 
-RoomWriteUserDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['rooms:write']),
-]
 
-RoomDeleteUserDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['rooms:delete']),
-]
-
-
-@router.get('/', dependencies=[Security(get_current_user, scopes=['rooms:read'])])
+@router.get('/', dependencies=[Security(require_scoped_user, scopes=['rooms:read'])])
 async def get_rooms(
     filters: Annotated[RoomFilters, Query()],
     room_service: RoomServiceDep,
@@ -38,7 +28,10 @@ async def get_rooms(
 async def create_room(
     room_create: RoomCreate,
     room_service: RoomServiceDep,
-    current_user: RoomWriteUserDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['rooms:write']),
+    ],
 ) -> RoomPublic:
     return await room_service.create_room(room_create, current_user.id)
 
@@ -47,7 +40,10 @@ async def create_room(
 async def join_room(
     payload: JoinRoomRequest,
     room_service: RoomServiceDep,
-    current_user: RoomWriteUserDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['rooms:write']),
+    ],
 ):
     return await room_service.join_room(payload, current_user.id)
 
@@ -57,7 +53,10 @@ async def update_room(
     room_update: RoomUpdate,
     room_id: UUID,
     room_service: RoomServiceDep,
-    current_user: RoomWriteUserDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['rooms:write']),
+    ],
 ) -> Optional[RoomPublic]:
     return await room_service.update_room(room_update, room_id, current_user.id)
 
@@ -66,6 +65,9 @@ async def update_room(
 async def end_room(
     room_id: UUID,
     room_service: RoomServiceDep,
-    current_user: RoomDeleteUserDep,
+    current_user: Annotated[
+        UserModel,
+        Security(require_scoped_user, scopes=['rooms:delete']),
+    ],
 ) -> Optional[RoomPublic]:
     return await room_service.end_room(room_id, current_user.id)

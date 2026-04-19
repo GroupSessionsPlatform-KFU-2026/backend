@@ -1,15 +1,16 @@
 from typing import Any
 from uuid import UUID
 
-import socketio
-
-from src.app.models.chat_message import ChatMessageCreate, ChatMessageUpdate
+from src.app.models.chat_message import (
+    ChatMessage,
+    ChatMessageCreate,
+    ChatMessageUpdate,
+)
 from src.app.services.chat_messages import ChatMessageService
 from src.app.sockets.events.base_room_crud import BaseRoomCrudSocketHandler
 from src.app.sockets.events.common import (
     SocketIdentity,
     parse_uuid,
-    register_event_handlers,
     require_non_empty_string,
 )
 from src.app.sockets.events.contexts import socket_service_factory
@@ -20,25 +21,36 @@ class ChatEventError(Exception):
     pass
 
 
-class ChatSocketHandler(
+class ChatSocketEventHandler(
     BaseRoomCrudSocketHandler[ChatMessageService, ChatMessageCreate, ChatMessageUpdate]
 ):
-    write_scope = 'chat:write'
-    delete_scope = 'chat:delete'
+    _create_command = 'chat.send'
+    _update_command = 'chat.update'
+    _delete_command = 'chat.delete'
 
-    created_event = 'chat.message.created'
-    updated_event = 'chat.message.updated'
-    deleted_event = 'chat.message.deleted'
+    _write_scope = 'chat:write'
+    _delete_scope = 'chat:delete'
 
-    resource_response_key = 'message'
-    deleted_response_key = 'deleted_message_id'
+    _created_event = 'chat.message.created'
+    _updated_event = 'chat.message.updated'
+    _deleted_event = 'chat.message.deleted'
 
-    create_target_not_found_message = 'Message not found'
-    resource_not_found_message = 'Message not found'
-    update_forbidden_message = 'You cannot edit this message'
-    delete_forbidden_message = 'You cannot delete this message'
+    _resource_response_key = 'message'
+    _deleted_response_key = 'deleted_message_id'
 
-    def parse_create_payload(
+    _create_target_not_found_message = 'Room not found'
+    _resource_not_found_message = 'Message not found'
+    _update_forbidden_message = 'You cannot edit this message'
+    _delete_forbidden_message = 'You cannot delete this message'
+
+    def __init__(self, socket_manager: SocketConnectionManager) -> None:
+        super().__init__(
+            socket_manager=socket_manager,
+            context_factory=socket_service_factory.chat,
+            error_cls=ChatEventError,
+        )
+
+    def _parse_create_payload(
         self,
         payload: dict[str, Any],
         identity: SocketIdentity,
@@ -54,7 +66,7 @@ class ChatSocketHandler(
             content=content,
         )
 
-    def parse_update_payload(
+    def _parse_update_payload(
         self,
         payload: dict[str, Any],
     ) -> tuple[dict[str, UUID], ChatMessageUpdate]:
@@ -70,7 +82,7 @@ class ChatSocketHandler(
         )
         return {'message_id': message_id}, ChatMessageUpdate(content=content)
 
-    def parse_delete_payload(
+    def _parse_delete_payload(
         self,
         payload: dict[str, Any],
     ) -> dict[str, UUID]:
@@ -81,56 +93,56 @@ class ChatSocketHandler(
         )
         return {'message_id': message_id}
 
-    async def create_resource(
+    async def _create_resource(
         self,
         service: ChatMessageService,
         identity: SocketIdentity,
         payload: ChatMessageCreate,
-    ):
+    ) -> ChatMessage | None:
         return await service.create_message(
             room_id=identity.room_id,
             message_create=payload,
         )
 
-    async def get_existing_resource(
+    async def _get_existing_resource(
         self,
         service: ChatMessageService,
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
-    ):
+    ) -> ChatMessage | None:
         return await service.get_message_in_room(
             room_id=identity.room_id,
             message_id=resource_ids['message_id'],
         )
 
-    async def update_resource(
+    async def _update_resource(
         self,
         service: ChatMessageService,
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
         payload: ChatMessageUpdate,
-    ):
+    ) -> ChatMessage | None:
         return await service.update_message(
             room_id=identity.room_id,
             message_id=resource_ids['message_id'],
             message_update=payload,
         )
 
-    async def delete_resource(
+    async def _delete_resource(
         self,
         service: ChatMessageService,
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
-    ):
+    ) -> ChatMessage | None:
         return await service.delete_message(
             room_id=identity.room_id,
             message_id=resource_ids['message_id'],
         )
 
-    def get_author_id(self, resource) -> UUID:
+    def _get_author_id(self, resource: ChatMessage) -> UUID:
         return resource.sender_id
 
-    def build_deleted_event_payload(
+    def _build_deleted_event_payload(
         self,
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
@@ -140,27 +152,5 @@ class ChatSocketHandler(
             'room_id': str(identity.room_id),
         }
 
-    def get_deleted_id(self, resource_ids: dict[str, UUID]) -> UUID:
+    def _get_deleted_id(self, resource_ids: dict[str, UUID]) -> UUID:
         return resource_ids['message_id']
-
-
-def register_chat_events(
-    sio: socketio.AsyncServer,
-    socket_manager: SocketConnectionManager,
-) -> None:
-    handler = ChatSocketHandler(
-        socket_manager=socket_manager,
-        context_factory=socket_service_factory.chat,
-        error_cls=ChatEventError,
-    )
-
-    register_event_handlers(
-        sio=sio,
-        socket_manager=socket_manager,
-        handlers={
-            'chat.send': handler.handle_create,
-            'chat.update': handler.handle_update,
-            'chat.delete': handler.handle_delete,
-        },
-        error_cls=ChatEventError,
-    )

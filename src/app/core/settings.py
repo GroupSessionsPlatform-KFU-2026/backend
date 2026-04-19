@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,11 +28,9 @@ class RBACSettings(BaseModel):
     public_role: str = 'public'
 
 
-class PomodoroDefaultsSettings(BaseModel):
-    work_duration: int = Field(default=25, gt=0)
-    short_break_duration: int = Field(default=5, gt=0)
-    long_break_duration: int = Field(default=15, gt=0)
-    cycles_before_long: int = Field(default=4, gt=0)
+class SocketSettings(BaseModel):
+    cors_allowed_origins: str | list[str] = '*'
+    path: str = 'socket.io'
 
 
 class Settings(BaseSettings):
@@ -45,7 +43,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     auth: AuthSettings = AuthSettings()
     rbac: RBACSettings = RBACSettings()
-    pomodoro: PomodoroDefaultsSettings = PomodoroDefaultsSettings()
+    socket: SocketSettings = SocketSettings()
 
 
 @lru_cache

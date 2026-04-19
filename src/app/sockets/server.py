@@ -2,14 +2,13 @@ import socketio
 from fastapi import FastAPI
 from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefusedError
 
+from src.app.core.settings import settings
 from src.app.sockets.auth import authenticate_socket_connection
 from src.app.sockets.events import (
-    register_board_comment_events,
-    register_board_events,
-    register_chat_events,
-    register_pomodoro_events,
-)
-from src.app.sockets.events.presence import (
+    BoardCommentSocketEventHandler,
+    BoardSocketEventHandler,
+    ChatSocketEventHandler,
+    PomodoroSocketEventHandler,
     emit_participant_joined,
     emit_participant_left,
     emit_presence_snapshot_to_room,
@@ -18,7 +17,7 @@ from src.app.sockets.manager import SocketConnectionManager
 
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # TODO: restrict in production
+    cors_allowed_origins=settings.socket.cors_allowed_origins,
 )
 
 socket_manager = SocketConnectionManager(sio=sio)
@@ -119,15 +118,15 @@ async def disconnect(sid: str, reason: str):
     )
 
 
-register_chat_events(sio=sio, socket_manager=socket_manager)
-register_board_events(sio=sio, socket_manager=socket_manager)
-register_board_comment_events(sio=sio, socket_manager=socket_manager)
-register_pomodoro_events(sio=sio, socket_manager=socket_manager)
+BoardSocketEventHandler(socket_manager).register(sio)
+BoardCommentSocketEventHandler(socket_manager).register(sio)
+ChatSocketEventHandler(socket_manager).register(sio)
+PomodoroSocketEventHandler(socket_manager).register(sio)
 
 
 def create_socket_app(fastapi_app: FastAPI):
     return socketio.ASGIApp(
         socketio_server=sio,
         other_asgi_app=fastapi_app,
-        socketio_path='socket.io',
+        socketio_path=settings.socket.path,
     )

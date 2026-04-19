@@ -5,11 +5,11 @@ from src.app.schemas.base import CommonListFilters
 
 
 class BoardElementType(str, Enum):
-    brush = 'brush'
-    eraser = 'eraser'
-    marker = 'marker'
-    shape = 'shape'
-    text = 'text'
+    BRUSH = 'brush'
+    ERASER = 'eraser'
+    MARKER = 'marker'
+    SHAPE = 'shape'
+    TEXT = 'text'
 
 
 class BoardElementFilters(CommonListFilters):

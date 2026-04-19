@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -15,7 +16,16 @@ if TYPE_CHECKING:
 
 
 class BoardElementBase(SQLModel):
-    element_type: BoardElementType = Field(nullable=False)
+    element_type: BoardElementType = Field(
+        sa_column=Column(
+            SAEnum(
+                BoardElementType,
+                name='boardelementtype',
+                values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            ),
+            nullable=False,
+        )
+    )
     data: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
 
 
