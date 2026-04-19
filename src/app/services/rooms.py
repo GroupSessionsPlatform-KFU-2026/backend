@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
+from src.app.core.settings import settings
 from src.app.dependencies.repositories import (
     PomodoroSessionRepository,
     PomodoroSessionRepositoryDep,
@@ -24,6 +25,23 @@ from src.app.schemas.room_request import JoinRoomRequest
 def generate_room_code(length: int = 6) -> str:
     alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
+    defaults = settings.pomodoro
+
+    return PomodoroSession(
+        room_id=room_id,
+        work_duration=defaults.work_duration,
+        short_break_duration=defaults.short_break_duration,
+        long_break_duration=defaults.long_break_duration,
+        cycles_before_long=defaults.cycles_before_long,
+        current_phase=PomodoroPhase.WORK,
+        completed_cycles=0,
+        is_running=False,
+        phase_ends_at=None,
+        session_ends_at=None,
+    )
 
 
 class RoomService:
@@ -61,18 +79,7 @@ class RoomService:
 
         saved_room = await self.__room_repository.save(room)
 
-        pomodoro = PomodoroSession(
-            room_id=saved_room.id,
-            work_duration=25,
-            short_break_duration=5,
-            long_break_duration=15,
-            cycles_before_long=4,
-            current_phase=PomodoroPhase.WORK,
-            completed_cycles=0,
-            is_running=False,
-            phase_ends_at=None,
-            session_ends_at=None,
-        )
+        pomodoro = build_default_pomodoro_session(saved_room.id)
         await self.__pomodoro_repository.save(pomodoro)
 
         return saved_room

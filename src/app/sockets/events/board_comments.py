@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import socketio
@@ -6,18 +7,15 @@ from src.app.models.board_element_comment import (
     BoardElementCommentCreate,
     BoardElementCommentUpdate,
 )
+from src.app.services.board_elements_comments import BoardElementCommentService
+from src.app.sockets.events.base_room_crud import BaseRoomCrudSocketHandler
 from src.app.sockets.events.common import (
-    ensure_can_manage_resource,
-    ensure_room_is_active,
-    ok_response,
+    SocketIdentity,
     parse_uuid,
     register_event_handlers,
-    require_identity,
     require_non_empty_string,
-    require_payload_dict,
-    require_scope,
 )
-from src.app.sockets.events.contexts import board_comment_context
+from src.app.sockets.events.contexts import socket_service_factory
 from src.app.sockets.manager import SocketConnectionManager
 
 
@@ -25,197 +23,182 @@ class BoardCommentSocketError(Exception):
     pass
 
 
-def _parse_create_payload(payload: dict) -> tuple[UUID, str]:
-    element_id = parse_uuid(
-        payload.get('element_id'), 'element id', BoardCommentSocketError
-    )
-    content = require_non_empty_string(
-        payload.get('content'),
-        'content',
-        BoardCommentSocketError,
-    )
-    return element_id, content
+class BoardCommentSocketHandler(
+    BaseRoomCrudSocketHandler[
+        BoardElementCommentService,
+        BoardElementCommentCreate,
+        BoardElementCommentUpdate,
+    ]
+):
+    write_scope = 'board:write'
+    delete_scope = 'board:delete'
 
+    created_event = 'board.comment.created'
+    updated_event = 'board.comment.updated'
+    deleted_event = 'board.comment.deleted'
 
-def _parse_update_payload(payload: dict) -> tuple[UUID, UUID, str]:
-    element_id = parse_uuid(
-        payload.get('element_id'), 'element id', BoardCommentSocketError
-    )
-    comment_id = parse_uuid(
-        payload.get('comment_id'), 'comment id', BoardCommentSocketError
-    )
-    content = require_non_empty_string(
-        payload.get('content'),
-        'content',
-        BoardCommentSocketError,
-    )
-    return element_id, comment_id, content
+    resource_response_key = 'comment'
+    deleted_response_key = 'deleted_comment_id'
 
+    create_target_not_found_message = 'Board element not found'
+    resource_not_found_message = 'Comment not found'
+    update_forbidden_message = 'You cannot edit this comment'
+    delete_forbidden_message = 'You cannot delete this comment'
 
-def _parse_delete_payload(payload: dict) -> tuple[UUID, UUID]:
-    element_id = parse_uuid(
-        payload.get('element_id'), 'element id', BoardCommentSocketError
-    )
-    comment_id = parse_uuid(
-        payload.get('comment_id'), 'comment id', BoardCommentSocketError
-    )
-    return element_id, comment_id
-
-
-async def _handle_comment_create(
-    socket_manager: SocketConnectionManager,
-    sid: str,
-    data: dict | None,
-) -> dict[str, object]:
-    payload = require_payload_dict(data, BoardCommentSocketError)
-    identity = await require_identity(socket_manager, sid, BoardCommentSocketError)
-    require_scope(identity, 'board:write', BoardCommentSocketError)
-
-    element_id, content = _parse_create_payload(payload)
-
-    async with board_comment_context() as (room_repository, comment_service):
-        await ensure_room_is_active(
-            room_repository, identity.room_id, BoardCommentSocketError
+    def parse_create_payload(
+        self,
+        payload: dict[str, Any],
+        identity: SocketIdentity,
+    ) -> BoardElementCommentCreate:
+        element_id = parse_uuid(
+            payload.get('element_id'),
+            'element id',
+            BoardCommentSocketError,
+        )
+        content = require_non_empty_string(
+            payload.get('content'),
+            'content',
+            BoardCommentSocketError,
         )
 
-        created_comment = await comment_service.create_comment(
+        return BoardElementCommentCreate(
+            board_element_id=element_id,
+            author_id=identity.user_id,
+            content=content,
+        )
+
+    def parse_update_payload(
+        self,
+        payload: dict[str, Any],
+    ) -> tuple[dict[str, UUID], BoardElementCommentUpdate]:
+        element_id = parse_uuid(
+            payload.get('element_id'),
+            'element id',
+            BoardCommentSocketError,
+        )
+        comment_id = parse_uuid(
+            payload.get('comment_id'),
+            'comment id',
+            BoardCommentSocketError,
+        )
+        content = require_non_empty_string(
+            payload.get('content'),
+            'content',
+            BoardCommentSocketError,
+        )
+
+        return (
+            {
+                'element_id': element_id,
+                'comment_id': comment_id,
+            },
+            BoardElementCommentUpdate(content=content),
+        )
+
+    def parse_delete_payload(
+        self,
+        payload: dict[str, Any],
+    ) -> dict[str, UUID]:
+        element_id = parse_uuid(
+            payload.get('element_id'),
+            'element id',
+            BoardCommentSocketError,
+        )
+        comment_id = parse_uuid(
+            payload.get('comment_id'),
+            'comment id',
+            BoardCommentSocketError,
+        )
+
+        return {
+            'element_id': element_id,
+            'comment_id': comment_id,
+        }
+
+    async def create_resource(
+        self,
+        service: BoardElementCommentService,
+        identity: SocketIdentity,
+        payload: BoardElementCommentCreate,
+    ):
+        return await service.create_comment(
             room_id=identity.room_id,
-            element_id=element_id,
-            comment_create=BoardElementCommentCreate(
-                board_element_id=element_id,
-                author_id=identity.user_id,
-                content=content,
-            ),
-        )
-        if created_comment is None:
-            raise BoardCommentSocketError('Board element not found')
-
-    comment_payload = created_comment.model_dump(mode='json')
-
-    await socket_manager.emit_to_room(
-        room_id=identity.room_id,
-        event='board.comment.created',
-        data=comment_payload,
-    )
-
-    return ok_response(comment=comment_payload)
-
-
-async def _handle_comment_update(
-    socket_manager: SocketConnectionManager,
-    sid: str,
-    data: dict | None,
-) -> dict[str, object]:
-    payload = require_payload_dict(data, BoardCommentSocketError)
-    identity = await require_identity(socket_manager, sid, BoardCommentSocketError)
-    require_scope(identity, 'board:write', BoardCommentSocketError)
-
-    element_id, comment_id, content = _parse_update_payload(payload)
-
-    async with board_comment_context() as (room_repository, comment_service):
-        await ensure_room_is_active(
-            room_repository, identity.room_id, BoardCommentSocketError
+            element_id=payload.board_element_id,
+            comment_create=payload,
         )
 
-        existing_comment = await comment_service.get_comment_in_element(
+    async def get_existing_resource(
+        self,
+        service: BoardElementCommentService,
+        identity: SocketIdentity,
+        resource_ids: dict[str, UUID],
+    ):
+        return await service.get_comment_in_element(
             room_id=identity.room_id,
-            element_id=element_id,
-            comment_id=comment_id,
-        )
-        if existing_comment is None:
-            raise BoardCommentSocketError('Comment not found')
-
-        ensure_can_manage_resource(
-            author_id=existing_comment.author_id,
-            identity=identity,
-            message='You cannot edit this comment',
-            error_cls=BoardCommentSocketError,
+            element_id=resource_ids['element_id'],
+            comment_id=resource_ids['comment_id'],
         )
 
-        updated_comment = await comment_service.update_comment(
+    async def update_resource(
+        self,
+        service: BoardElementCommentService,
+        identity: SocketIdentity,
+        resource_ids: dict[str, UUID],
+        payload: BoardElementCommentUpdate,
+    ):
+        return await service.update_comment(
             room_id=identity.room_id,
-            element_id=element_id,
-            comment_id=comment_id,
-            comment_update=BoardElementCommentUpdate(content=content),
-        )
-        if updated_comment is None:
-            raise BoardCommentSocketError('Comment not found')
-
-    comment_payload = updated_comment.model_dump(mode='json')
-
-    await socket_manager.emit_to_room(
-        room_id=identity.room_id,
-        event='board.comment.updated',
-        data=comment_payload,
-    )
-
-    return ok_response(comment=comment_payload)
-
-
-async def _handle_comment_delete(
-    socket_manager: SocketConnectionManager,
-    sid: str,
-    data: dict | None,
-) -> dict[str, object]:
-    payload = require_payload_dict(data, BoardCommentSocketError)
-    identity = await require_identity(socket_manager, sid, BoardCommentSocketError)
-    require_scope(identity, 'board:delete', BoardCommentSocketError)
-
-    element_id, comment_id = _parse_delete_payload(payload)
-
-    async with board_comment_context() as (room_repository, comment_service):
-        await ensure_room_is_active(
-            room_repository, identity.room_id, BoardCommentSocketError
+            element_id=resource_ids['element_id'],
+            comment_id=resource_ids['comment_id'],
+            comment_update=payload,
         )
 
-        existing_comment = await comment_service.get_comment_in_element(
+    async def delete_resource(
+        self,
+        service: BoardElementCommentService,
+        identity: SocketIdentity,
+        resource_ids: dict[str, UUID],
+    ):
+        return await service.delete_comment(
             room_id=identity.room_id,
-            element_id=element_id,
-            comment_id=comment_id,
-        )
-        if existing_comment is None:
-            raise BoardCommentSocketError('Comment not found')
-
-        ensure_can_manage_resource(
-            author_id=existing_comment.author_id,
-            identity=identity,
-            message='You cannot delete this comment',
-            error_cls=BoardCommentSocketError,
+            element_id=resource_ids['element_id'],
+            comment_id=resource_ids['comment_id'],
         )
 
-        deleted_comment = await comment_service.delete_comment(
-            room_id=identity.room_id,
-            element_id=element_id,
-            comment_id=comment_id,
-        )
-        if deleted_comment is None:
-            raise BoardCommentSocketError('Comment not found')
+    def get_author_id(self, resource) -> UUID:
+        return resource.author_id
 
-    deleted_payload = {
-        'id': str(comment_id),
-        'board_element_id': str(element_id),
-    }
+    def build_deleted_event_payload(
+        self,
+        _identity: SocketIdentity,
+        resource_ids: dict[str, UUID],
+    ) -> dict[str, Any]:
+        return {
+            'id': str(resource_ids['comment_id']),
+            'board_element_id': str(resource_ids['element_id']),
+        }
 
-    await socket_manager.emit_to_room(
-        room_id=identity.room_id,
-        event='board.comment.deleted',
-        data=deleted_payload,
-    )
-
-    return ok_response(deleted_comment_id=str(comment_id))
+    def get_deleted_id(self, resource_ids: dict[str, UUID]) -> UUID:
+        return resource_ids['comment_id']
 
 
 def register_board_comment_events(
     sio: socketio.AsyncServer,
     socket_manager: SocketConnectionManager,
 ) -> None:
+    handler = BoardCommentSocketHandler(
+        socket_manager=socket_manager,
+        context_factory=socket_service_factory.board_comments,
+        error_cls=BoardCommentSocketError,
+    )
+
     register_event_handlers(
         sio=sio,
         socket_manager=socket_manager,
         handlers={
-            'board.comment.create': _handle_comment_create,
-            'board.comment.update': _handle_comment_update,
-            'board.comment.delete': _handle_comment_delete,
+            'board.comment.create': handler.handle_create,
+            'board.comment.update': handler.handle_update,
+            'board.comment.delete': handler.handle_delete,
         },
         error_cls=BoardCommentSocketError,
     )

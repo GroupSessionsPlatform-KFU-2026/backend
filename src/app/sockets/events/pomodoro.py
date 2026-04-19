@@ -12,7 +12,7 @@ from src.app.sockets.events.common import (
     require_payload_dict,
     require_scope,
 )
-from src.app.sockets.events.contexts import pomodoro_context
+from src.app.sockets.events.contexts import socket_service_factory
 from src.app.sockets.manager import SocketConnectionManager
 
 
@@ -73,7 +73,7 @@ async def _handle_state_get(
     identity = await require_identity(socket_manager, sid, PomodoroSocketError)
     require_scope(identity, 'pomodoro:read', PomodoroSocketError)
 
-    async with pomodoro_context() as (room_repository, pomodoro_service):
+    async with socket_service_factory.pomodoro() as (room_repository, pomodoro_service):
         await ensure_room_is_active(
             room_repository, identity.room_id, PomodoroSocketError
         )
@@ -99,7 +99,7 @@ async def _handle_settings_update(
 
     pomodoro_update = _parse_settings_update(payload)
 
-    async with pomodoro_context() as (room_repository, pomodoro_service):
+    async with socket_service_factory.pomodoro() as (room_repository, pomodoro_service):
         await ensure_room_is_active(
             room_repository, identity.room_id, PomodoroSocketError
         )
@@ -131,7 +131,7 @@ async def _handle_start(
         PomodoroSocketError,
     )
 
-    async with pomodoro_context() as (room_repository, pomodoro_service):
+    async with socket_service_factory.pomodoro() as (room_repository, pomodoro_service):
         await ensure_room_is_active(
             room_repository, identity.room_id, PomodoroSocketError
         )
@@ -160,7 +160,7 @@ async def _handle_pause(
         PomodoroSocketError,
     )
 
-    async with pomodoro_context() as (room_repository, pomodoro_service):
+    async with socket_service_factory.pomodoro() as (room_repository, pomodoro_service):
         await ensure_room_is_active(
             room_repository, identity.room_id, PomodoroSocketError
         )
@@ -189,7 +189,7 @@ async def _handle_reset(
         PomodoroSocketError,
     )
 
-    async with pomodoro_context() as (room_repository, pomodoro_service):
+    async with socket_service_factory.pomodoro() as (room_repository, pomodoro_service):
         await ensure_room_is_active(
             room_repository, identity.room_id, PomodoroSocketError
         )

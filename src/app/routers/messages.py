@@ -1,15 +1,14 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
-from src.app.dependencies.route_guards import (
-    ChatReadGuard,
-    CurrentChatDeleteUserDep,
-    CurrentChatWriteUserDep,
+from src.app.dependencies.security import (
+    CurrentUserChatDeleteDep,
+    CurrentUserChatReadDep,
+    CurrentUserChatWriteDep,
 )
-from src.app.dependencies.router_bundles import MessageMutationDepsDep
-from src.app.dependencies.services import ChatMessageServiceDep
+from src.app.dependencies.services import ChatMessageServiceDep, RoomAccessServiceDep
 from src.app.models.chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
@@ -23,11 +22,38 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[ChatReadGuard])
+async def require_message_write_access(
+    room_id: UUID,
+    message_id: UUID,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserChatWriteDep,
+) -> None:
+    await room_access.ensure_message_manage(
+        room_id,
+        message_id,
+        current_user.id,
+    )
+
+
+async def require_message_delete_access(
+    room_id: UUID,
+    message_id: UUID,
+    room_access: RoomAccessServiceDep,
+    current_user: CurrentUserChatDeleteDep,
+) -> None:
+    await room_access.ensure_message_manage(
+        room_id,
+        message_id,
+        current_user.id,
+    )
+
+
+@router.get('/')
 async def get_room_messages(
     room_id: UUID,
     filters: Annotated[ChatMessageFilters, Query()],
     chat_service: ChatMessageServiceDep,
+    _current_user: CurrentUserChatReadDep,
 ) -> Sequence[ChatMessagePublic]:
     return await chat_service.get_messages(room_id, filters)
 
@@ -37,7 +63,7 @@ async def create_message(
     room_id: UUID,
     message_create: ChatMessageCreate,
     chat_service: ChatMessageServiceDep,
-    current_user: CurrentChatWriteUserDep,
+    current_user: CurrentUserChatWriteDep,
 ) -> ChatMessagePublic:
     message_create = message_create.model_copy(
         update={
@@ -48,32 +74,26 @@ async def create_message(
     return await chat_service.create_message(room_id, message_create)
 
 
-@router.put('/{message_id}')
+@router.put(
+    '/{message_id}',
+    dependencies=[Depends(require_message_write_access)],
+)
 async def update_message(
     room_id: UUID,
     message_id: UUID,
     message_update: ChatMessageUpdate,
-    deps: MessageMutationDepsDep,
-    current_user: CurrentChatWriteUserDep,
+    chat_service: ChatMessageServiceDep,
 ) -> Optional[ChatMessagePublic]:
-    await deps.room_access.ensure_message_manage(
-        room_id=room_id,
-        message_id=message_id,
-        user_id=current_user.id,
-    )
-    return await deps.chat_service.update_message(room_id, message_id, message_update)
+    return await chat_service.update_message(room_id, message_id, message_update)
 
 
-@router.delete('/{message_id}')
+@router.delete(
+    '/{message_id}',
+    dependencies=[Depends(require_message_delete_access)],
+)
 async def delete_message(
     room_id: UUID,
     message_id: UUID,
-    deps: MessageMutationDepsDep,
-    current_user: CurrentChatDeleteUserDep,
+    chat_service: ChatMessageServiceDep,
 ) -> Optional[ChatMessagePublic]:
-    await deps.room_access.ensure_message_manage(
-        room_id=room_id,
-        message_id=message_id,
-        user_id=current_user.id,
-    )
-    return await deps.chat_service.delete_message(room_id, message_id)
+    return await chat_service.delete_message(room_id, message_id)

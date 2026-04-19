@@ -14,47 +14,52 @@ from src.app.services.pomodoro_sessions import PomodoroSessionService
 from src.app.utils.repository import Repository
 
 
-@asynccontextmanager
-async def chat_context() -> AsyncIterator[tuple[Repository[Room], ChatMessageService]]:
-    async with async_session_maker() as db_session:
-        room_repository = Repository[Room](db_session)
-        chat_repository = Repository[ChatMessage](db_session)
-        chat_service = ChatMessageService(repository=chat_repository)
-        yield room_repository, chat_service
+class SocketServiceFactory:
+    @asynccontextmanager
+    async def chat(self) -> AsyncIterator[tuple[Repository[Room], ChatMessageService]]:
+        async with async_session_maker() as db_session:
+            room_repository = Repository[Room](db_session)
+            chat_repository = Repository[ChatMessage](db_session)
+            yield room_repository, ChatMessageService(repository=chat_repository)
+
+    @asynccontextmanager
+    async def board(
+        self,
+    ) -> AsyncIterator[tuple[Repository[Room], BoardElementService]]:
+        async with async_session_maker() as db_session:
+            room_repository = Repository[Room](db_session)
+            board_repository = Repository[BoardElement](db_session)
+            yield room_repository, BoardElementService(repository=board_repository)
+
+    @asynccontextmanager
+    async def board_comments(
+        self,
+    ) -> AsyncIterator[tuple[Repository[Room], BoardElementCommentService]]:
+        async with async_session_maker() as db_session:
+            room_repository = Repository[Room](db_session)
+            comment_repository = Repository[BoardElementComment](db_session)
+            element_repository = Repository[BoardElement](db_session)
+            yield (
+                room_repository,
+                BoardElementCommentService(
+                    repository=comment_repository,
+                    board_element_repository=element_repository,
+                ),
+            )
+
+    @asynccontextmanager
+    async def pomodoro(
+        self,
+    ) -> AsyncIterator[tuple[Repository[Room], PomodoroSessionService]]:
+        async with async_session_maker() as db_session:
+            room_repository = Repository[Room](db_session)
+            pomodoro_repository = Repository[PomodoroSession](db_session)
+            yield (
+                room_repository,
+                PomodoroSessionService(
+                    repository=pomodoro_repository,
+                ),
+            )
 
 
-@asynccontextmanager
-async def board_context() -> AsyncIterator[
-    tuple[Repository[Room], BoardElementService]
-]:
-    async with async_session_maker() as db_session:
-        room_repository = Repository[Room](db_session)
-        board_repository = Repository[BoardElement](db_session)
-        board_service = BoardElementService(repository=board_repository)
-        yield room_repository, board_service
-
-
-@asynccontextmanager
-async def board_comment_context() -> AsyncIterator[
-    tuple[Repository[Room], BoardElementCommentService]
-]:
-    async with async_session_maker() as db_session:
-        room_repository = Repository[Room](db_session)
-        comment_repository = Repository[BoardElementComment](db_session)
-        element_repository = Repository[BoardElement](db_session)
-        comment_service = BoardElementCommentService(
-            repository=comment_repository,
-            board_element_repository=element_repository,
-        )
-        yield room_repository, comment_service
-
-
-@asynccontextmanager
-async def pomodoro_context() -> AsyncIterator[
-    tuple[Repository[Room], PomodoroSessionService]
-]:
-    async with async_session_maker() as db_session:
-        room_repository = Repository[Room](db_session)
-        pomodoro_repository = Repository[PomodoroSession](db_session)
-        pomodoro_service = PomodoroSessionService(repository=pomodoro_repository)
-        yield room_repository, pomodoro_service
+socket_service_factory = SocketServiceFactory()

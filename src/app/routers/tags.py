@@ -1,13 +1,9 @@
 from typing import Annotated, Optional, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Security
 
-from src.app.dependencies.route_guards import (
-    TagsDeleteGuard,
-    TagsReadGuard,
-    TagsWriteGuard,
-)
+from src.app.dependencies.security import get_current_user
 from src.app.dependencies.services import TagServiceDep
 from src.app.models.tag import TagCreate, TagPublic, TagUpdate
 from src.app.schemas.tag_filters import TagFilters
@@ -18,7 +14,7 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[TagsReadGuard])
+@router.get('/', dependencies=[Security(get_current_user, scopes=['tags:read'])])
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
     tag_service: TagServiceDep,
@@ -26,7 +22,7 @@ async def get_tags(
     return await tag_service.get_tags(filters)
 
 
-@router.post('/', dependencies=[TagsWriteGuard])
+@router.post('/', dependencies=[Security(get_current_user, scopes=['tags:write'])])
 async def create_tag(
     tag_create: TagCreate,
     tag_service: TagServiceDep,
@@ -34,7 +30,9 @@ async def create_tag(
     return await tag_service.create_tag(tag_create)
 
 
-@router.get('/{tag_id}', dependencies=[TagsReadGuard])
+@router.get(
+    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:read'])]
+)
 async def get_tag(
     tag_id: UUID,
     tag_service: TagServiceDep,
@@ -42,7 +40,9 @@ async def get_tag(
     return await tag_service.get_tag(tag_id)
 
 
-@router.put('/{tag_id}', dependencies=[TagsWriteGuard])
+@router.put(
+    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:write'])]
+)
 async def update_tag(
     tag_update: TagUpdate,
     tag_id: UUID,
@@ -51,7 +51,9 @@ async def update_tag(
     return await tag_service.update_tag(tag_update, tag_id)
 
 
-@router.delete('/{tag_id}', dependencies=[TagsDeleteGuard])
+@router.delete(
+    '/{tag_id}', dependencies=[Security(get_current_user, scopes=['tags:delete'])]
+)
 async def delete_tag(
     tag_id: UUID,
     tag_service: TagServiceDep,

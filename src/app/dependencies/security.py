@@ -63,3 +63,29 @@ CurrentUserBoardDeleteDep = Annotated[
     UserModel,
     Security(get_current_user, scopes=['board:delete']),
 ]
+
+CurrentUserParticipantsReadDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['participants:read']),
+]
+CurrentUserParticipantsWriteDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['participants:write']),
+]
+CurrentUserParticipantsDeleteDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['participants:delete']),
+]
+
+CurrentUserChatReadDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['chat:read']),
+]
+CurrentUserChatWriteDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['chat:write']),
+]
+CurrentUserChatDeleteDep = Annotated[
+    UserModel,
+    Security(get_current_user, scopes=['chat:delete']),
+]
