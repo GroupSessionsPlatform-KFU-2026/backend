@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -12,9 +13,9 @@ if TYPE_CHECKING:
     from .board_element_comment import BoardElementComment
     from .chat_message import ChatMessage
     from .project import Project
+    from .role import Role
     from .room import Room
     from .room_participant import RoomParticipant
-    from .role import Role
 
 
 class UserBase(SQLModel):
@@ -45,13 +46,17 @@ class UserUpdate(UserBase):
 
 class User(UserPublic, table=True):
     __tablename__ = 'user'
+    __table_args__ = (
+        UniqueConstraint('email', name='uq_user_email'),
+        UniqueConstraint('username', name='uq_user_username'),
+    )
     password_hash: str
 
     roles: list['Role'] = Relationship(
         back_populates='users',
         link_model=UserRoleLink,
     )
-    
+
     projects: list['Project'] = Relationship(back_populates='owner')
     created_rooms: list['Room'] = Relationship(back_populates='creator')
     participations: list['RoomParticipant'] = Relationship(back_populates='user')

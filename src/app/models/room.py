@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -30,13 +31,15 @@ class RoomPublic(BaseModel, RoomBase):
     project_id: UUID
     creator_id: UUID
     room_code: str
-    ended_at: datetime | None = None
+    ended_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
     status: RoomStatus
 
 
 class RoomCreate(RoomBase):
     project_id: UUID
-    creator_id: UUID
 
 
 class RoomUpdate(RoomBase):
@@ -49,7 +52,10 @@ class Room(RoomBase, BaseModel, table=True):
     project_id: UUID = Field(foreign_key='project.id', nullable=False)
     creator_id: UUID = Field(foreign_key='user.id', nullable=False)
     room_code: str
-    ended_at: datetime | None = None
+    ended_at: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
     status: RoomStatus
 
     project: 'Project' = Relationship(back_populates='rooms')

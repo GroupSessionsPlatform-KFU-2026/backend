@@ -9,6 +9,7 @@ class AuthSettings(BaseModel):
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
     token_algorithm: str = 'HS256'
+    cookie_secure: bool = False
 
 
 class DBSettings(BaseModel):
@@ -27,6 +28,11 @@ class RBACSettings(BaseModel):
     public_role: str = 'public'
 
 
+class SocketSettings(BaseModel):
+    cors_allowed_origins: str | list[str] = '*'
+    path: str = 'socket.io'
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file='.env',
@@ -37,10 +43,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     auth: AuthSettings = AuthSettings()
     rbac: RBACSettings = RBACSettings()
-
-    db: DBSettings = DBSettings()
-    auth: AuthSettings = AuthSettings()
-    rbac: RBACSettings = RBACSettings()
+    socket: SocketSettings = SocketSettings()
 
 
 @lru_cache

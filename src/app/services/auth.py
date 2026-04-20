@@ -153,15 +153,7 @@ class AuthService:
                 detail='Authentication credentials were not provided or are invalid',
             )
 
-        user_scopes = self.__collect_user_scopes(user)
-
-        for required_scope in required_scopes:
-            if required_scope not in user_scopes:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail='Not enough permissions',
-                )
-
+        self.ensure_user_scopes(user, required_scopes)
         return user
 
     async def login(self, user: User | None) -> TokenData:
@@ -321,6 +313,16 @@ class AuthService:
             await self.__refresh_session_repository.save(refresh_session)
 
         return LogoutResponse()
+
+    def ensure_user_scopes(self, user: User, required_scopes: list[str]) -> None:
+        user_scopes = self.__collect_user_scopes(user)
+
+        for required_scope in required_scopes:
+            if required_scope not in user_scopes:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail='Not enough permissions',
+                )
 
     def __collect_user_scopes(self, user: User) -> set[str]:
         return {

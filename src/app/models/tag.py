@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -28,5 +29,6 @@ class TagUpdate(TagBase):
 
 class Tag(TagPublic, table=True):
     __tablename__ = 'tag'
+    __table_args__ = (UniqueConstraint('name', name='uq_tag_name'),)
 
     project_tags: list['ProjectTag'] = Relationship(back_populates='tag')

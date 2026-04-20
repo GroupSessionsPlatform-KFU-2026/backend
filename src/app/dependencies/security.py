@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Security
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm, SecurityScopes
 
 from src.app.core.security import oauth2_scheme
@@ -23,23 +23,32 @@ async def authenticate_user(
 AuthenticatedUserDep = Annotated[AuthenticatedUser, Depends(authenticate_user)]
 
 
-async def get_current_user(
-    security_scopes: SecurityScopes,
+async def get_access_token(
     token: Annotated[str, Depends(oauth2_scheme)],
+) -> str:
+    return token
+
+
+AccessTokenDep = Annotated[str, Depends(get_access_token)]
+
+
+async def get_current_user(
+    access_token: AccessTokenDep,
     auth_service: AuthServiceDep,
 ) -> UserModel:
     return await auth_service.get_current_user(
-        token=token,
-        required_scopes=security_scopes.scopes,
+        token=access_token,
+        required_scopes=[],
     )
 
 
-CurrentProfileUserDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['profile:read']),
-]
+CurrentUserDep = Annotated[UserModel, Depends(get_current_user)]
 
-CurrentUsersReadUserDep = Annotated[
-    UserModel,
-    Security(get_current_user, scopes=['users:read']),
-]
+
+async def require_scoped_user(
+    security_scopes: SecurityScopes,
+    current_user: CurrentUserDep,
+    auth_service: AuthServiceDep,
+) -> UserModel:
+    auth_service.ensure_user_scopes(current_user, security_scopes.scopes)
+    return current_user

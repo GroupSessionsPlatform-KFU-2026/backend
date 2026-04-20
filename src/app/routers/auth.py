@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Response, status
 
+from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
 from src.app.dependencies.services import AuthServiceDep
 from src.app.models.user import UserCreate
@@ -36,7 +37,7 @@ async def login(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-        secure=False,  # TODO: set True in production (HTTPS)
+        secure=settings.auth.cookie_secure,
         samesite='lax',
         path='/',
     )
@@ -56,7 +57,7 @@ async def refresh(
         key='refresh_token',
         value=token_data.refresh_token,
         httponly=True,
-        secure=False,  # TODO: set True in production (HTTPS)
+        secure=settings.auth.cookie_secure,
         samesite='lax',
         path='/',
     )

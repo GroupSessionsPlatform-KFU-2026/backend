@@ -27,7 +27,7 @@ class RoomParticipantService:
     ) -> Sequence[RoomParticipant]:
         return await self.__repository.fetch(
             filters=filters,
-            room_id=room_id,
+            extra_filters={'room_id': room_id},
             offset=filters.offset,
             limit=filters.limit,
         )
@@ -52,8 +52,10 @@ class RoomParticipantService:
         user_id: UUID,
     ) -> Optional[RoomParticipant]:
         participants = await self.__repository.fetch(
-            room_id=room_id,
-            user_id=user_id,
+            extra_filters={
+                'room_id': room_id,
+                'user_id': user_id,
+            },
             limit=1,
         )
         return participants[0] if participants else None
