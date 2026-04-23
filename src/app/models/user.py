@@ -22,7 +22,6 @@ class UserBase(SQLModel):
     email: str = Field(index=True)
     username: str = Field(index=True)
     avatar_url: str | None = None
-    is_verify: bool = False
 
 
 class UserPublic(BaseModel, UserBase):
@@ -32,6 +31,7 @@ class UserPublic(BaseModel, UserBase):
         sa_type=TIMESTAMP(timezone=True),
     )
     is_active: bool
+    is_verified: bool
 
 
 class UserCreate(UserBase):
@@ -52,7 +52,7 @@ class User(UserPublic, table=True):
         UniqueConstraint('username', name='uq_user_username'),
     )
     password_hash: str
-
+    is_verified: bool = Field(default=False, nullable=False)
     roles: list['Role'] = Relationship(
         back_populates='users',
         link_model=UserRoleLink,

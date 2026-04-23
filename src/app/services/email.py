@@ -1,4 +1,6 @@
-from fastapi import BackgroundTasks, Path
+from pathlib import Path
+
+from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
 from src.app.core.settings import settings
