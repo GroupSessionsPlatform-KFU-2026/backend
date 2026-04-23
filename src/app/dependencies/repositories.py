@@ -6,6 +6,7 @@ from src.app.dependencies.session import SessionDep
 from src.app.models.board_element import BoardElement
 from src.app.models.board_element_comment import BoardElementComment
 from src.app.models.chat_message import ChatMessage
+from src.app.models.email import EmailNotification
 from src.app.models.permission import Permission
 from src.app.models.pomodoro_session import PomodoroSession
 from src.app.models.project import Project
@@ -19,6 +20,17 @@ from src.app.models.tag import Tag
 from src.app.models.user_role import UserRoleLink
 from src.app.utils.repository import Repository
 from src.app.utils.user_repository import UserRepository
+
+
+async def get_email_notification_repository(session: SessionDep):
+    yield Repository[EmailNotification](session)
+
+
+type EmailNotificationRepository = Repository[EmailNotification]
+EmailNotificationRepositoryDep = Annotated[
+    EmailNotificationRepository,
+    Depends(get_email_notification_repository),
+]
 
 
 async def get_refresh_session_repository(session: SessionDep):

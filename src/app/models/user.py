@@ -22,6 +22,7 @@ class UserBase(SQLModel):
     email: str = Field(index=True)
     username: str = Field(index=True)
     avatar_url: str | None = None
+    is_verify: bool = False
 
 
 class UserPublic(BaseModel, UserBase):

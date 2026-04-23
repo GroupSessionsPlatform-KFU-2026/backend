@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import BackgroundTasks, Depends
 
 from src.app.dependencies.repositories import (
     RefreshSessionRepositoryDep,
@@ -12,6 +12,7 @@ from src.app.services.auth import AuthService
 from src.app.services.board_elements import BoardElementService
 from src.app.services.board_elements_comments import BoardElementCommentService
 from src.app.services.chat_messages import ChatMessageService
+from src.app.services.email import EmailService
 from src.app.services.pomodoro_sessions import PomodoroSessionService
 from src.app.services.projects import ProjectService
 from src.app.services.rbac_bootstrap import RBACBootstrapService
@@ -40,6 +41,11 @@ def get_auth_service(
     )
 
 
+def get_email_service(background_tasks: BackgroundTasks):
+    return EmailService(background_tasks)
+
+
+EmailServiceDep = Annotated[EmailService, Depends(get_email_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 RoomAccessServiceDep = Annotated[RoomAccessService, Depends(RoomAccessService)]
 ProjectServiceDep = Annotated[ProjectService, Depends(ProjectService)]
