@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -13,3 +15,9 @@ class RegisterResponse(BaseModel):
 
 class LogoutResponse(BaseModel):
     success: bool = True
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    code: UUID
+    new_password: str
+    repeat_password: str

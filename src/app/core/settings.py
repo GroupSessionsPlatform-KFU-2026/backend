@@ -33,6 +33,22 @@ class SocketSettings(BaseModel):
     path: str = 'socket.io'
 
 
+class EmailSettings(BaseModel):
+    username: str = 'studiom.backend@gmail.com'
+    password: str = ''
+    server: str = 'smtp.gmail.com'
+    port: int = 587
+    from_email: str = 'studiom.backend@gmail.com'
+    from_name: str = 'Studiom'
+    starttls: bool = True
+    ssl_tls: bool = False
+    use_credentials: bool = True
+    validate_certs: bool = True
+    notification_lifetime_seconds: int = 3600
+    app_base_url: str = 'http://localhost:5173'
+    template_folder: str = 'src/app/templates'
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file='.env',
@@ -44,6 +60,7 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()
     rbac: RBACSettings = RBACSettings()
     socket: SocketSettings = SocketSettings()
+    email: EmailSettings = EmailSettings()
 
 
 @lru_cache
