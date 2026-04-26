@@ -1,8 +1,10 @@
+# pyright: reportInvalidTypeForm=false
 from typing import Annotated
 
 from fastapi import BackgroundTasks, Depends
 
 from src.app.dependencies.repositories import (
+<<<<<<< HEAD
 <<<<<<< HEAD
     EmailNotificationRepositoryDep,
     RefreshSessionRepositoryDep,
@@ -24,6 +26,22 @@ from src.app.services.auth import AuthRepositories, AuthService
     get_role_repository,
     get_user_repository,
     get_user_role_repository,
+=======
+    BoardElementCommentRepositoryDep,
+    BoardElementRepositoryDep,
+    ChatMessageRepositoryDep,
+    PomodoroSessionRepositoryDep,
+    ProjectRepositoryDep,
+    ProjectTagRepositoryDep,
+    RefreshSessionRepositoryDep,
+    RolePermissionRepositoryDep,
+    RoleRepositoryDep,
+    RoomParticipantRepositoryDep,
+    RoomRepositoryDep,
+    TagRepositoryDep,
+    UserRepositoryDep,
+    UserRoleRepositoryDep,
+>>>>>>> 2232780 (feat: fix best practices)
 )
 >>>>>>> af316e3 (auth + RBAC)
 from src.app.services.auth import AuthService
@@ -41,7 +59,14 @@ from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
 
-UserServiceDep = Annotated[UserService, Depends(UserService)]
+
+def get_user_service(
+    user_repository: UserRepositoryDep,
+) -> UserService:
+    return UserService(user_repository=user_repository)
+
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
 
 <<<<<<< HEAD
@@ -62,13 +87,11 @@ def get_auth_repositories(
     return AuthRepositories(
 =======
 def get_auth_service(
-    user_repository: UserRepository = Depends(get_user_repository),
-    refresh_session_repository: RefreshSessionRepository = Depends(
-        get_refresh_session_repository,
-    ),
-    role_repository: RoleRepository = Depends(get_role_repository),
-    user_role_repository: UserRoleRepository = Depends(get_user_role_repository),
-    user_service: UserService = Depends(UserService),
+    user_repository: UserRepositoryDep,
+    refresh_session_repository: RefreshSessionRepositoryDep,
+    role_repository: RoleRepositoryDep,
+    user_role_repository: UserRoleRepositoryDep,
+    user_service: UserService = Depends(get_user_service),
 ) -> AuthService:
     return AuthService(
 >>>>>>> af316e3 (auth + RBAC)
@@ -96,29 +119,138 @@ def get_auth_service(
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-RoomAccessServiceDep = Annotated[RoomAccessService, Depends(RoomAccessService)]
-from src.app.services.rbac_bootstrap import RBACBootstrapService
-from src.app.services.users import UserService
-from typing import Annotated
-from fastapi import Depends
 
-AuthServiceDep = Annotated[AuthService, Depends()]
-UserServiceDep = Annotated[UserService, Depends()]
-ProjectServiceDep = Annotated[ProjectService, Depends(ProjectService)]
-TagServiceDep = Annotated[TagService, Depends(TagService)]
-RoomServiceDep = Annotated[RoomService, Depends(RoomService)]
+
+def get_room_access_service(
+    room_repository: RoomRepositoryDep,
+    room_participant_repository: RoomParticipantRepositoryDep,
+    chat_message_repository: ChatMessageRepositoryDep,
+    board_element_repository: BoardElementRepositoryDep,
+    board_element_comment_repository: BoardElementCommentRepositoryDep,
+) -> RoomAccessService:
+    return RoomAccessService(
+        room_repository=room_repository,
+        room_participant_repository=room_participant_repository,
+        chat_message_repository=chat_message_repository,
+        board_element_repository=board_element_repository,
+        board_element_comment_repository=board_element_comment_repository,
+    )
+
+
+RoomAccessServiceDep = Annotated[RoomAccessService, Depends(get_room_access_service)]
+
+
+def get_project_service(
+    project_repository: ProjectRepositoryDep,
+    project_tag_repository: ProjectTagRepositoryDep,
+    tag_repository: TagRepositoryDep,
+) -> ProjectService:
+    return ProjectService(
+        project_repository=project_repository,
+        project_tag_repository=project_tag_repository,
+        tag_repository=tag_repository,
+    )
+
+
+ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+
+
+def get_tag_service(
+    tag_repository: TagRepositoryDep,
+) -> TagService:
+    return TagService(repository=tag_repository)
+
+
+TagServiceDep = Annotated[TagService, Depends(get_tag_service)]
+
+
+def get_room_service(
+    room_repository: RoomRepositoryDep,
+    room_participant_repository: RoomParticipantRepositoryDep,
+    pomodoro_repository: PomodoroSessionRepositoryDep,
+) -> RoomService:
+    return RoomService(
+        room_repository=room_repository,
+        room_participant_repository=room_participant_repository,
+        pomodoro_repository=pomodoro_repository,
+    )
+
+
+RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
+
+
+def get_room_participant_service(
+    room_participant_repository: RoomParticipantRepositoryDep,
+) -> RoomParticipantService:
+    return RoomParticipantService(repository=room_participant_repository)
+
+
 RoomParticipantServiceDep = Annotated[
     RoomParticipantService,
-    Depends(RoomParticipantService),
+    Depends(get_room_participant_service),
 ]
-ChatMessageServiceDep = Annotated[ChatMessageService, Depends(ChatMessageService)]
-BoardElementServiceDep = Annotated[BoardElementService, Depends(BoardElementService)]
+
+
+def get_chat_message_service(
+    chat_message_repository: ChatMessageRepositoryDep,
+) -> ChatMessageService:
+    return ChatMessageService(repository=chat_message_repository)
+
+
+ChatMessageServiceDep = Annotated[ChatMessageService, Depends(get_chat_message_service)]
+
+
+def get_board_element_service(
+    board_element_repository: BoardElementRepositoryDep,
+) -> BoardElementService:
+    return BoardElementService(repository=board_element_repository)
+
+
+BoardElementServiceDep = Annotated[
+    BoardElementService,
+    Depends(get_board_element_service),
+]
+
+
+def get_board_element_comment_service(
+    board_element_comment_repository: BoardElementCommentRepositoryDep,
+    board_element_repository: BoardElementRepositoryDep,
+) -> BoardElementCommentService:
+    return BoardElementCommentService(
+        repository=board_element_comment_repository,
+        board_element_repository=board_element_repository,
+    )
+
+
 BoardElementCommentServiceDep = Annotated[
     BoardElementCommentService,
-    Depends(BoardElementCommentService),
+    Depends(get_board_element_comment_service),
 ]
+
+
+def get_pomodoro_session_service(
+    pomodoro_repository: PomodoroSessionRepositoryDep,
+) -> PomodoroSessionService:
+    return PomodoroSessionService(repository=pomodoro_repository)
+
+
 PomodoroSessionServiceDep = Annotated[
     PomodoroSessionService,
-    Depends(PomodoroSessionService),
+    Depends(get_pomodoro_session_service),
 ]
-RBACBootstrapServiceDep = Annotated[RBACBootstrapService, Depends(RBACBootstrapService)]
+
+
+def get_rbac_bootstrap_service(
+    permission_repository,
+    role_repository: RoleRepositoryDep,
+    role_permission_repository: RolePermissionRepositoryDep,
+    user_repository: UserRepositoryDep,
+    user_role_repository: UserRoleRepositoryDep,
+) -> RBACBootstrapService:
+    return RBACBootstrapService(
+        permission_repository=permission_repository,
+        role_repository=role_repository,
+        role_permission_repository=role_permission_repository,
+        user_repository=user_repository,
+        user_role_repository=user_role_repository,
+    )

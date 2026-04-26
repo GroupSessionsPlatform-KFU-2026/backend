@@ -48,7 +48,6 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     'pomodoro:write': 'Create and update pomodoro state',
     'pomodoro:delete': 'Delete pomodoro state',
 }
-
 INITIAL_ROLE_SCOPES: dict[str, list[str]] = {
     'public': [
         'profile:read',
