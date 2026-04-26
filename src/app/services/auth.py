@@ -54,11 +54,8 @@ class AuthService:
     __refresh_session_repository: RefreshSessionRepository
     __role_repository: RoleRepository
     __user_role_repository: UserRoleRepository
-<<<<<<< HEAD
     __email_notification_repository: EmailNotificationRepository
-=======
     __user_service: UserService
->>>>>>> 75525e9 (fix:auth)
 
     def __init__(
         self,
