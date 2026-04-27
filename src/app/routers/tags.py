@@ -1,12 +1,15 @@
-from typing import Annotated, Optional, Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import TagServiceDep
 from src.app.models.tag import TagCreate, TagPublic, TagUpdate
+from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
 from src.app.schemas.tag_filters import TagFilters
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/tags',
@@ -14,15 +17,31 @@ router = APIRouter(
 )
 
 
-@router.get('/', dependencies=[Security(require_scoped_user, scopes=['tags:read'])])
+@router.get(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['tags:read'])],
+    responses=auth_responses,
+)
 async def get_tags(
     filters: Annotated[TagFilters, Query()],
     tag_service: TagServiceDep,
-) -> Sequence[TagPublic]:
-    return await tag_service.get_tags(filters)
+) -> PaginatedResponse[TagPublic]:
+    tags = await tag_service.get_tags(filters)
+    total = await tag_service.count_tags(filters)
+
+    return build_paginated_response(
+        items=list(tags),
+        total=total,
+        offset=filters.offset,
+        limit=filters.limit,
+    )
 
 
-@router.post('/', dependencies=[Security(require_scoped_user, scopes=['tags:write'])])
+@router.post(
+    '/',
+    dependencies=[Security(require_scoped_user, scopes=['tags:write'])],
+    responses=auth_responses,
+)
 async def create_tag(
     tag_create: TagCreate,
     tag_service: TagServiceDep,
@@ -33,32 +52,59 @@ async def create_tag(
 @router.get(
     '/{tag_id}',
     dependencies=[Security(require_scoped_user, scopes=['tags:read'])],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def get_tag(
     tag_id: UUID,
     tag_service: TagServiceDep,
-) -> Optional[TagPublic]:
-    return await tag_service.get_tag(tag_id)
+) -> TagPublic:
+    tag = await tag_service.get_tag(tag_id)
+
+    if tag is None:
+        raise NotFoundError
+
+    return tag
 
 
 @router.put(
     '/{tag_id}',
     dependencies=[Security(require_scoped_user, scopes=['tags:write'])],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def update_tag(
     tag_update: TagUpdate,
     tag_id: UUID,
     tag_service: TagServiceDep,
-) -> Optional[TagPublic]:
-    return await tag_service.update_tag(tag_update, tag_id)
+) -> TagPublic:
+    tag = await tag_service.update_tag(tag_update, tag_id)
+
+    if tag is None:
+        raise NotFoundError
+
+    return tag
 
 
 @router.delete(
     '/{tag_id}',
     dependencies=[Security(require_scoped_user, scopes=['tags:delete'])],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def delete_tag(
     tag_id: UUID,
     tag_service: TagServiceDep,
-) -> Optional[TagPublic]:
-    return await tag_service.delete_tag(tag_id)
+) -> TagPublic:
+    tag = await tag_service.delete_tag(tag_id)
+
+    if tag is None:
+        raise NotFoundError
+
+    return tag

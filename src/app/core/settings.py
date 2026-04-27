@@ -1,10 +1,13 @@
 from functools import lru_cache
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AuthSettings(BaseModel):
+class AuthSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix='AUTH_',
+    )
     secret: str = 'secret'
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
@@ -12,7 +15,12 @@ class AuthSettings(BaseModel):
     cookie_secure: bool = False
 
 
-class DBSettings(BaseModel):
+class DBSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        extra='ignore',
+    )
+
     db_schema: str = 'postgresql+asyncpg'
     db_host: str = 'localhost'
     db_user: str = 'postgres'
@@ -20,6 +28,11 @@ class DBSettings(BaseModel):
     db_port: int = 5432
     db_name: str = 'db'
 
+class PomodoroDefaultsSettings(BaseModel):
+    work_duration: int = Field(default=25, gt=0)
+    short_break_duration: int = Field(default=5, gt=0)
+    long_break_duration: int = Field(default=15, gt=0)
+    cycles_before_long: int = Field(default=4, gt=0)
 
 class RBACSettings(BaseModel):
     admin_email: str = 'admin@example.com'
@@ -31,6 +44,34 @@ class RBACSettings(BaseModel):
 class SocketSettings(BaseModel):
     cors_allowed_origins: str | list[str] = '*'
     path: str = 'socket.io'
+
+
+class CommonSettings(BaseModel):
+    host: str = 'http://localhost:8000'
+    frontend_host: str = 'http://localhost:5173'
+    cors_allowed_origins: list[str] = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8080',
+    ]
+    cors_allowed_methods: list[str] = [
+        'GET',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'OPTIONS',
+    ]
+    cors_allowed_headers: list[str] = [
+        'Authorization',
+        'Content-Type',
+        'Accept',
+    ]
+
+
+class RateLimitSettings(BaseModel):
+    default: str = '100/minute'
+    auth: str = '10/minute'
 
 
 class EmailSettings(BaseModel):
@@ -61,6 +102,10 @@ class Settings(BaseSettings):
     rbac: RBACSettings = RBACSettings()
     socket: SocketSettings = SocketSettings()
     email: EmailSettings = EmailSettings()
+    common: CommonSettings = CommonSettings()
+    rate_limit: RateLimitSettings = RateLimitSettings()
+    pomodoro: PomodoroDefaultsSettings = PomodoroDefaultsSettings()
+
 
 
 @lru_cache

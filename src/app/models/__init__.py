@@ -1,3 +1,4 @@
+from .base import BaseModel
 from .board_element import (
     BoardElement,
     BoardElementBase,
@@ -87,6 +88,7 @@ from .user import (
 from .user_role import UserRoleLink
 
 __all__ = [
+    'BaseModel',
     'BoardElement',
     'BoardElementBase',
     'BoardElementCreate',

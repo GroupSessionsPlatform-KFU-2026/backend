@@ -57,7 +57,6 @@ class User(UserPublic, table=True):
         back_populates='users',
         link_model=UserRoleLink,
     )
-
     projects: list['Project'] = Relationship(back_populates='owner')
     created_rooms: list['Room'] = Relationship(back_populates='creator')
     participations: list['RoomParticipant'] = Relationship(back_populates='user')

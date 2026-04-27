@@ -55,6 +55,7 @@ class AuthService:
     __role_repository: RoleRepository
     __user_role_repository: UserRoleRepository
     __email_notification_repository: EmailNotificationRepository
+    __user_service: UserService
 
     def __init__(
         self,
@@ -216,7 +217,6 @@ class AuthService:
             )
 
         safe_user_id = user.id
-
         access_jti = uuid4()
         refresh_jti = uuid4()
 
@@ -302,7 +302,6 @@ class AuthService:
             )
 
         safe_user_id = user.id
-
         new_access_jti = uuid4()
         new_refresh_jti = uuid4()
 
@@ -572,3 +571,4 @@ class AuthService:
             f'{settings.email.app_base_url}'
             f'/reset-password?user_id={user_id}&code={code}'
         )
+
