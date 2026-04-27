@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,13 @@ class EmailSettings(BaseModel):
     template_folder: str = 'src/app/templates'
 
 
+class PomodoroDefaultsSettings(BaseModel):
+    work_duration: int = Field(default=25, gt=0)
+    short_break_duration: int = Field(default=5, gt=0)
+    long_break_duration: int = Field(default=15, gt=0)
+    cycles_before_long: int = Field(default=4, gt=0)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file='.env',
@@ -61,6 +68,7 @@ class Settings(BaseSettings):
     rbac: RBACSettings = RBACSettings()
     socket: SocketSettings = SocketSettings()
     email: EmailSettings = EmailSettings()
+    pomodoro: PomodoroDefaultsSettings = PomodoroDefaultsSettings()
 
 
 @lru_cache
