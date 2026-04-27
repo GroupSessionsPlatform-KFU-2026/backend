@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 from uuid import UUID
-
+from fastapi import HTTPException, status
 from src.app.dependencies.repositories import (
     BoardElementCommentRepository,
     BoardElementCommentRepositoryDep,
@@ -62,10 +62,14 @@ class BoardElementCommentService:
         room_id: UUID,
         element_id: UUID,
         comment_create: BoardElementCommentCreate,
-    ) -> Optional[BoardElementComment]:
+    ) -> BoardElementComment:
         element = await self.get_room_element(room_id, element_id)
+
         if element is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Board element not found',
+            )
 
         comment_dump = comment_create.model_dump(exclude={'board_element_id'})
         comment = BoardElementComment(
@@ -80,17 +84,29 @@ class BoardElementCommentService:
         room_id: UUID,
         element_id: UUID,
         comment_id: UUID,
-    ) -> Optional[BoardElementComment]:
+    ) -> BoardElementComment:
         element = await self.get_room_element(room_id, element_id)
-        if element is None:
-            return None
 
-        return await self.__repository.get_one_by_filters(
+        if element is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Board element not found',
+            )
+
+        comment = await self.__repository.get_one_by_filters(
             extra_filters={
                 'id': comment_id,
                 'board_element_id': element_id,
             },
         )
+
+        if comment is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Comment not found',
+            )
+
+        return comment
 
     async def update_comment(
         self,
@@ -98,10 +114,8 @@ class BoardElementCommentService:
         element_id: UUID,
         comment_id: UUID,
         comment_update: BoardElementCommentUpdate,
-    ) -> Optional[BoardElementComment]:
+    ) -> BoardElementComment:
         comment = await self.get_comment_in_element(room_id, element_id, comment_id)
-        if comment is None:
-            return None
         return await self.__repository.update(comment.id, comment_update)
 
     async def delete_comment(
@@ -109,10 +123,8 @@ class BoardElementCommentService:
         room_id: UUID,
         element_id: UUID,
         comment_id: UUID,
-    ) -> Optional[BoardElementComment]:
+    ) -> BoardElementComment:
         comment = await self.get_comment_in_element(room_id, element_id, comment_id)
-        if comment is None:
-            return None
 
         comment.is_deleted = True
         return await self.__repository.save(comment)

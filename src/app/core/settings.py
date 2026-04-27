@@ -28,16 +28,6 @@ class DBSettings(BaseSettings):
     db_port: int = 5432
     db_name: str = 'db'
 
-class RBACSettings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix='RBAC_',
-    )
-    admin_email: str = 'admin@example.com'
-    admin_password: str = 'admin123456'
-    admin_role: str = 'admin'
-    public_role: str = 'public'
-
-
 class RBACSettings(BaseModel):
     admin_email: str = 'admin@example.com'
     admin_password: str = 'admin123456'

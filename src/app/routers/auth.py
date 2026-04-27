@@ -1,16 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Cookie, Query, Request, Response, status, Depends
-from fastapi import APIRouter, Cookie, Request, Response, status
-from fastapi import APIRouter, Cookie, Response, status
+from fastapi import APIRouter, Cookie, Depends, Query, Request, Response, status
 
 from src.app.core.limiter import limiter
-from src.app.core.responses import auth_responses, conflict_responses
 from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
 from src.app.dependencies.services import get_auth_service
-from src.app.services.auth import AuthService
 from src.app.models.user import UserCreate
 from src.app.schemas.security import (
     LogoutResponse,
@@ -18,12 +14,108 @@ from src.app.schemas.security import (
     RegisterResponse,
     TokenData,
 )
+from src.app.services.auth import AuthService
 
 router = APIRouter(
     prefix='/auth',
     tags=['auth'],
 )
 
+
+REGISTER_RESPONSES = {
+    409: {
+        'description': 'Email or username already exists',
+        'content': {
+            'application/json': {
+                'examples': {
+                    'email_exists': {
+                        'summary': 'Email already exists',
+                        'value': {'detail': 'User with this email already exists'},
+                    },
+                    'username_exists': {
+                        'summary': 'Username already exists',
+                        'value': {'detail': 'User with this username already exists'},
+                    },
+                }
+            }
+        },
+    },
+    500: {
+        'description': 'Public role is not initialized',
+        'content': {
+            'application/json': {
+                'example': {'detail': 'Public role is not initialized'}
+            }
+        },
+    },
+}
+
+LOGIN_RESPONSES = {
+    401: {
+        'description': 'Invalid credentials',
+        'content': {
+            'application/json': {
+                'example': {'detail': 'Invalid email or password'}
+            }
+        },
+    },
+    403: {
+        'description': 'Account is not verified',
+        'content': {
+            'application/json': {
+                'example': {'detail': 'Account is not verified'}
+            }
+        },
+    },
+}
+
+REFRESH_RESPONSES = {
+    401: {
+        'description': 'Refresh token error',
+        'content': {
+            'application/json': {
+                'examples': {
+                    'not_provided': {
+                        'summary': 'Refresh token was not provided',
+                        'value': {'detail': 'Refresh token was not provided'},
+                    },
+                    'invalid': {
+                        'summary': 'Invalid refresh token',
+                        'value': {'detail': 'Invalid refresh token'},
+                    },
+                    'invalid_session': {
+                        'summary': 'Refresh session is invalid',
+                        'value': {'detail': 'Refresh session is invalid'},
+                    },
+                    'expired': {
+                        'summary': 'Refresh token expired',
+                        'value': {'detail': 'Refresh token expired'},
+                    },
+                }
+            }
+        },
+    },
+}
+
+LOGOUT_RESPONSES = {
+    401: {
+        'description': 'Refresh token error',
+        'content': {
+            'application/json': {
+                'examples': {
+                    'not_provided': {
+                        'summary': 'Refresh token was not provided',
+                        'value': {'detail': 'Refresh token was not provided'},
+                    },
+                    'invalid': {
+                        'summary': 'Invalid refresh token',
+                        'value': {'detail': 'Invalid refresh token'},
+                    },
+                }
+            }
+        },
+    },
+}
 
 VERIFY_RESPONSES = {
     400: {'description': 'Notification already used or expired'},
@@ -43,7 +135,7 @@ CONFIRM_RESET_RESPONSES = {
 @router.post(
     '/register',
     status_code=status.HTTP_201_CREATED,
-    responses=conflict_responses,
+    responses=REGISTER_RESPONSES,
 )
 @limiter.limit(settings.rate_limit.auth)
 async def register(
@@ -56,7 +148,7 @@ async def register(
 
 @router.post(
     '/login',
-    responses=auth_responses,
+    responses=LOGIN_RESPONSES,
 )
 @limiter.limit(settings.rate_limit.auth)
 async def login(
@@ -72,7 +164,6 @@ async def login(
         value=token_data.refresh_token,
         httponly=True,
         secure=settings.auth.cookie_secure,
-        # secure=False,  # TODO: set True in production (HTTPS)
         samesite='lax',
         path='/',
     )
@@ -82,7 +173,7 @@ async def login(
 
 @router.post(
     '/refresh',
-    responses=auth_responses,
+    responses=REFRESH_RESPONSES,
 )
 async def refresh(
     response: Response,
@@ -96,7 +187,6 @@ async def refresh(
         value=token_data.refresh_token,
         httponly=True,
         secure=settings.auth.cookie_secure,
-        # secure=False,  # TODO: set True in production (HTTPS)
         samesite='lax',
         path='/',
     )
@@ -106,7 +196,7 @@ async def refresh(
 
 @router.post(
     '/logout',
-    responses=auth_responses,
+    responses=LOGOUT_RESPONSES,
 )
 async def logout(
     response: Response,

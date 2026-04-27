@@ -5,8 +5,6 @@ from typing import Optional, Sequence
 from uuid import UUID
 
 from fastapi import HTTPException, status
-
-from src.app.core.settings import settings
 from src.app.dependencies.repositories import (
     PomodoroSessionRepository,
     PomodoroSessionRepositoryDep,
@@ -27,6 +25,18 @@ def generate_room_code(length: int = 6) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
+    return PomodoroSession(
+        room_id=room_id,
+        work_duration=1500,    
+        short_break_duration=300,   
+        long_break_duration=900,     
+        cycles_before_long=4,
+        current_phase=PomodoroPhase.WORK,
+        completed_cycles=0,
+        is_running=False,
+        phase_ends_at=None,
+        session_ends_at=None,
+    )
     defaults = settings.pomodoro
 
     return PomodoroSession(
@@ -82,18 +92,30 @@ class RoomService:
 
         return saved_room
 
-    async def get_room(self, room_id: UUID) -> Optional[Room]:
-        return await self.__room_repository.get(room_id)
+    async def get_room(self, room_id: UUID) -> Room:
+        room = await self.__room_repository.get(room_id)
+
+        if room is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found',
+            )
+
+        return room
 
     async def update_room(
         self,
         room_update: RoomUpdate,
         room_id: UUID,
         actor_id: UUID,
-    ) -> Optional[Room]:
+    ) -> Room:
         room = await self.__room_repository.get(room_id)
+
         if room is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found',
+            )
 
         if room.creator_id != actor_id:
             raise HTTPException(
@@ -107,10 +129,14 @@ class RoomService:
 
         return await self.__room_repository.save(room)
 
-    async def end_room(self, room_id: UUID, actor_id: UUID) -> Optional[Room]:
+    async def end_room(self, room_id: UUID, actor_id: UUID) -> Room:
         room = await self.__room_repository.get(room_id)
+
         if room is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found',
+            )
 
         if room.creator_id != actor_id:
             raise HTTPException(
@@ -120,18 +146,23 @@ class RoomService:
 
         room.status = RoomStatus.ENDED
         room.ended_at = datetime.now(timezone.utc)
+
         return await self.__room_repository.save(room)
 
     async def join_room(
         self,
         payload: JoinRoomRequest,
         user_id: UUID,
-    ) -> Optional[RoomParticipant]:
+    ) -> RoomParticipant:
         room = await self.__room_repository.get_one_by_filters(
             extra_filters={'room_code': payload.room_code},
         )
+
         if room is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found',
+            )
 
         if room.status == RoomStatus.ENDED:
             raise HTTPException(
@@ -139,16 +170,15 @@ class RoomService:
                 detail='Cannot join an ended room',
             )
 
-        existing_participant = (
-            await self.__room_participant_repository.get_one_by_filters(
-                extra_filters={
-                    'room_id': room.id,
-                    'user_id': user_id,
-                    'left_at': None,
-                    'is_kicked': False,
-                },
-            )
+        existing_participant = await self.__room_participant_repository.get_one_by_filters(
+            extra_filters={
+                'room_id': room.id,
+                'user_id': user_id,
+                'left_at': None,
+                'is_kicked': False,
+            },
         )
+
         if existing_participant is not None:
             return existing_participant
 
@@ -159,6 +189,7 @@ class RoomService:
                 'is_kicked': False,
             },
         )
+
         if len(active_participants) >= room.max_participants:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -173,7 +204,5 @@ class RoomService:
             left_at=None,
             is_kicked=False,
         )
+
         return await self.__room_participant_repository.save(participant)
-    
-    async def count_rooms(self, filters: RoomFilters) -> int:
-        return await self.__room_repository.count(filters=filters)

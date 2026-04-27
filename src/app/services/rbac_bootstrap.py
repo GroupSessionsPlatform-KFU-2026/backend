@@ -49,7 +49,6 @@ class RBACBootstrapService:
         permissions = await self.__ensure_permissions()
 
         admin_role = await self.__ensure_role(settings.rbac.admin_role)
-        admin_role_id = admin_role.id
 
         public_role = await self.__ensure_role(settings.rbac.public_role)
         admin_role_id = admin_role.id
@@ -156,6 +155,5 @@ class RBACBootstrapService:
             return
 
         link = UserRoleLink(user_id=user_id, role_id=role_id)
-        await self.__user_role_repository.save(link)
         await self.__user_role_repository.save(link)
 

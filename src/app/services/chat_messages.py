@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional, Sequence
 from uuid import UUID
+from fastapi import HTTPException, status
 
 from src.app.dependencies.repositories import (
     ChatMessageRepository,
@@ -52,7 +53,7 @@ class ChatMessageService:
         self,
         room_id: UUID,
         message_id: UUID,
-    ) -> Optional[ChatMessage]:
+    ) -> ChatMessage:
         messages = await self.__repository.fetch(
             extra_filters={
                 'id': message_id,
@@ -60,30 +61,34 @@ class ChatMessageService:
             },
             limit=1,
         )
-        return messages[0] if messages else None
+
+        if not messages:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Message not found',
+            )
+
+        return messages[0]
 
     async def update_message(
         self,
         room_id: UUID,
         message_id: UUID,
         message_update: ChatMessageUpdate,
-    ) -> Optional[ChatMessage]:
+    ) -> ChatMessage:
         message = await self.get_message_in_room(room_id, message_id)
-        if message is None:
-            return None
 
         message.content = message_update.content
         message.is_edited = True
+
         return await self.__repository.save(message)
 
     async def delete_message(
         self,
         room_id: UUID,
         message_id: UUID,
-    ) -> Optional[ChatMessage]:
+    ) -> ChatMessage:
         message = await self.get_message_in_room(room_id, message_id)
-        if message is None:
-            return None
         return await self.__repository.delete(message.id)
     
     async def count_messages(

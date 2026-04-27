@@ -12,7 +12,6 @@ from src.app.models.pomodoro_session import PomodoroSession
 from src.app.models.project import Project
 from src.app.models.project_tag import ProjectTag
 from src.app.models.refresh_session import RefreshSession
-
 from src.app.models.role import Role
 from src.app.models.role_permission import RolePermissionLink
 from src.app.models.room import Room
@@ -27,7 +26,7 @@ async def get_email_notification_repository(session: SessionDep):
     yield Repository[EmailNotification](session)
 
 
-type EmailNotificationRepository = Repository[EmailNotification]
+EmailNotificationRepository = Repository[EmailNotification]
 EmailNotificationRepositoryDep = Annotated[
     EmailNotificationRepository,
     Depends(get_email_notification_repository),
@@ -38,17 +37,7 @@ async def get_refresh_session_repository(session: SessionDep):
     yield Repository[RefreshSession](session)
 
 
-type RefreshSessionRepository = Repository[RefreshSession]
-RefreshSessionRepositoryDep = Annotated[
-    RefreshSessionRepository, Depends(get_refresh_session_repository)
-]
-
-
-async def get_refresh_session_repository(session: SessionDep):
-    yield Repository[RefreshSession](session)
-
-
-type RefreshSessionRepository = Repository[RefreshSession]
+RefreshSessionRepository = Repository[RefreshSession]
 RefreshSessionRepositoryDep = Annotated[
     RefreshSessionRepository, Depends(get_refresh_session_repository)
 ]
@@ -65,7 +54,7 @@ async def get_project_repository(session: SessionDep):
     yield Repository[Project](session)
 
 
-type ProjectRepository = Repository[Project]
+ProjectRepository = Repository[Project]
 ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_repository)]
 
 
@@ -73,7 +62,7 @@ async def get_tag_repository(session: SessionDep):
     yield Repository[Tag](session)
 
 
-type TagRepository = Repository[Tag]
+TagRepository = Repository[Tag]
 TagRepositoryDep = Annotated[TagRepository, Depends(get_tag_repository)]
 
 
@@ -81,7 +70,7 @@ async def get_project_tag_repository(session: SessionDep):
     yield Repository[ProjectTag](session)
 
 
-type ProjectTagRepository = Repository[ProjectTag]
+ProjectTagRepository = Repository[ProjectTag]
 ProjectTagRepositoryDep = Annotated[
     ProjectTagRepository, Depends(get_project_tag_repository)
 ]
@@ -91,7 +80,7 @@ async def get_room_repository(session: SessionDep):
     yield Repository[Room](session)
 
 
-type RoomRepository = Repository[Room]
+RoomRepository = Repository[Room]
 RoomRepositoryDep = Annotated[RoomRepository, Depends(get_room_repository)]
 
 
@@ -99,7 +88,7 @@ async def get_room_participant_repository(session: SessionDep):
     yield Repository[RoomParticipant](session)
 
 
-type RoomParticipantRepository = Repository[RoomParticipant]
+RoomParticipantRepository = Repository[RoomParticipant]
 RoomParticipantRepositoryDep = Annotated[
     RoomParticipantRepository, Depends(get_room_participant_repository)
 ]
@@ -109,7 +98,7 @@ async def get_chat_message_repository(session: SessionDep):
     yield Repository[ChatMessage](session)
 
 
-type ChatMessageRepository = Repository[ChatMessage]
+ChatMessageRepository = Repository[ChatMessage]
 ChatMessageRepositoryDep = Annotated[
     ChatMessageRepository, Depends(get_chat_message_repository)
 ]
@@ -119,7 +108,7 @@ async def get_board_element_repository(session: SessionDep):
     yield Repository[BoardElement](session)
 
 
-type BoardElementRepository = Repository[BoardElement]
+BoardElementRepository = Repository[BoardElement]
 BoardElementRepositoryDep = Annotated[
     BoardElementRepository, Depends(get_board_element_repository)
 ]
@@ -129,7 +118,7 @@ async def get_board_element_comment_repository(session: SessionDep):
     yield Repository[BoardElementComment](session)
 
 
-type BoardElementCommentRepository = Repository[BoardElementComment]
+BoardElementCommentRepository = Repository[BoardElementComment]
 BoardElementCommentRepositoryDep = Annotated[
     BoardElementCommentRepository,
     Depends(get_board_element_comment_repository),
@@ -140,7 +129,7 @@ async def get_pomodoro_session_repository(session: SessionDep):
     yield Repository[PomodoroSession](session)
 
 
-type PomodoroSessionRepository = Repository[PomodoroSession]
+PomodoroSessionRepository = Repository[PomodoroSession]
 PomodoroSessionRepositoryDep = Annotated[
     PomodoroSessionRepository, Depends(get_pomodoro_session_repository)
 ]
@@ -150,7 +139,7 @@ async def get_permission_repository(session: SessionDep):
     yield Repository[Permission](session)
 
 
-type PermissionRepository = Repository[Permission]
+PermissionRepository = Repository[Permission]
 PermissionRepositoryDep = Annotated[
     PermissionRepository, Depends(get_permission_repository)
 ]
@@ -160,7 +149,7 @@ async def get_role_repository(session: SessionDep):
     yield Repository[Role](session)
 
 
-type RoleRepository = Repository[Role]
+RoleRepository = Repository[Role]
 RoleRepositoryDep = Annotated[RoleRepository, Depends(get_role_repository)]
 
 
@@ -168,15 +157,17 @@ async def get_user_role_repository(session: SessionDep):
     yield Repository[UserRoleLink](session)
 
 
-type UserRoleRepository = Repository[UserRoleLink]
-UserRoleRepositoryDep = Annotated[UserRoleRepository, Depends(get_user_role_repository)]
+UserRoleRepository = Repository[UserRoleLink]
+UserRoleRepositoryDep = Annotated[
+    UserRoleRepository, Depends(get_user_role_repository)
+]
 
 
 async def get_role_permission_repository(session: SessionDep):
     yield Repository[RolePermissionLink](session)
 
 
-type RolePermissionRepository = Repository[RolePermissionLink]
+RolePermissionRepository = Repository[RolePermissionLink]
 RolePermissionRepositoryDep = Annotated[
     RolePermissionRepository, Depends(get_role_permission_repository)
 ]
