@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,12 @@ class DBSettings(BaseSettings):
     db_password: str = 'pass'
     db_port: int = 5432
     db_name: str = 'db'
+
+class PomodoroDefaultsSettings(BaseModel):
+    work_duration: int = Field(default=25, gt=0)
+    short_break_duration: int = Field(default=5, gt=0)
+    long_break_duration: int = Field(default=15, gt=0)
+    cycles_before_long: int = Field(default=4, gt=0)
 
 class RBACSettings(BaseModel):
     admin_email: str = 'admin@example.com'
@@ -98,6 +104,7 @@ class Settings(BaseSettings):
     email: EmailSettings = EmailSettings()
     common: CommonSettings = CommonSettings()
     rate_limit: RateLimitSettings = RateLimitSettings()
+    pomodoro: PomodoroDefaultsSettings = PomodoroDefaultsSettings()
 
 
 

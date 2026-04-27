@@ -1,6 +1,8 @@
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
+
 from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     ProjectRepository,
     ProjectRepositoryDep,
@@ -104,7 +106,7 @@ class ProjectService:
 
         relation = relations[0]
         return await self.__project_tag_repository.delete(relation.id)
-    
+
     async def count_projects(self, filters: ProjectFilters) -> int:
         return await self.__project_repository.count(filters=filters)
 

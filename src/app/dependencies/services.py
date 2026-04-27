@@ -9,7 +9,6 @@ from src.app.dependencies.repositories import (
     UserRepositoryDep,
     UserRoleRepositoryDep,
 )
-
 from src.app.services.auth import AuthRepositories, AuthService
 from src.app.services.board_elements import BoardElementService
 from src.app.services.board_elements_comments import BoardElementCommentService
@@ -23,7 +22,6 @@ from src.app.services.room_participants import RoomParticipantService
 from src.app.services.rooms import RoomService
 from src.app.services.tags import TagService
 from src.app.services.users import UserService
-
 
 UserServiceDep = Annotated[UserService, Depends(UserService)]
 

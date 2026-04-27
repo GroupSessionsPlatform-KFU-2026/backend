@@ -138,7 +138,7 @@ class Repository[Model: BaseModel]:
 
         await self.save(instance)
         return instance
-    
+
     async def count(
         self,
         filters: Optional[PydanticBaseModel] = None,

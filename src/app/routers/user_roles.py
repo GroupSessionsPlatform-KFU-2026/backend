@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status
+from fastapi import APIRouter, Security
 
 from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.repositories import (

@@ -4,7 +4,7 @@ from src.app.utils.logger import logger
 
 
 async def request_logging_middleware(request: Request, call_next):
-    logger.warning(
+    logger.info(
         'Request started',
         extra={
             'path': request.url.path,
@@ -27,7 +27,7 @@ async def request_logging_middleware(request: Request, call_next):
         )
         raise exc
 
-    logger.warning(
+    logger.info(
         'Request finished',
         extra={
             'path': request.url.path,

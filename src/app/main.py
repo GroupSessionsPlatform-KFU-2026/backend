@@ -25,7 +25,6 @@ from src.app.routers import (
 )
 from src.app.sockets.server import create_socket_app
 
-
 fastapi_app = FastAPI(
     title='Group Sessions Platform API',
     version='1.1.0',

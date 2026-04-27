@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from .role import Role
     from .room import Room
     from .room_participant import RoomParticipant
-    from .role import Role
 
 
 class UserBase(SQLModel):

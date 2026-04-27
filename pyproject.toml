@@ -24,7 +24,7 @@ dependencies = [
     "fastapi-mail>=1.6.2",
     "slowapi>=0.1.9",
     "gunicorn>=25.3.0",
-    "jwt>=1.4.0",
+    "uvicorn-worker>=0.4.0",
 ]
 
 [dependency-groups]
