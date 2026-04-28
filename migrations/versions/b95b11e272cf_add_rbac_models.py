@@ -7,11 +7,10 @@ Create Date: 2026-04-09 15:28:01.617460
 """
 
 import sqlalchemy as sa
-import sqlmodel  # NEW
+import sqlmodel
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
 revision = 'b95b11e272cf'
 down_revision = 'f1146c74a873'
 branch_labels = None
@@ -57,7 +56,6 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['user_id'], ['user.id']),
         sa.PrimaryKeyConstraint('user_id', 'role_id'),
     )
-    # ### end Alembic commands ###
 
 
 def downgrade() -> None:

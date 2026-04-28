@@ -69,8 +69,6 @@ class Repository[Model: BaseModel]:
         entities = await self.__session.exec(select_statement)
         return entities.all()
 
-    async def count(self, filters: Optional[PydanticBaseModel] = None) -> int:
-        return len(await self.fetch(filters=filters))
 
     async def get_one_by_filters(
         self,
@@ -140,3 +138,15 @@ class Repository[Model: BaseModel]:
 
         await self.save(instance)
         return instance
+
+    async def count(
+        self,
+        filters: Optional[PydanticBaseModel] = None,
+        extra_filters: Optional[dict[str, Any]] = None,
+    ) -> int:
+        return len(
+            await self.fetch(
+                filters=filters,
+                extra_filters=extra_filters,
+            )
+        )

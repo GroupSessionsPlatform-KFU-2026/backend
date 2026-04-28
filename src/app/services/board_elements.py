@@ -1,6 +1,8 @@
 from typing import Optional, Sequence
 from uuid import UUID
 
+from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     BoardElementRepository,
     BoardElementRepositoryDep,
@@ -63,20 +65,39 @@ class BoardElementService:
         room_id: UUID,
         element_id: UUID,
         element_update: BoardElementUpdate,
-    ) -> Optional[BoardElement]:
+    ) -> BoardElement:
         element = await self.get_element_in_room(room_id, element_id)
+
         if element is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Board element not found',
+            )
+
         return await self.__repository.update(element.id, element_update)
 
     async def delete_element(
         self,
         room_id: UUID,
         element_id: UUID,
-    ) -> Optional[BoardElement]:
+    ) -> BoardElement:
         element = await self.get_element_in_room(room_id, element_id)
+
         if element is None:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Board element not found',
+            )
 
         element.is_deleted = True
         return await self.__repository.save(element)
+
+    async def count_elements(
+        self,
+        room_id: UUID,
+        filters: BoardElementFilters,
+    ) -> int:
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'room_id': room_id},
+        )

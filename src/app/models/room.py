@@ -56,6 +56,7 @@ class Room(RoomBase, BaseModel, table=True):
         default=None,
         sa_type=TIMESTAMP(timezone=True),
     )
+    ended_at: datetime | None = None
     status: RoomStatus
 
     project: 'Project' = Relationship(back_populates='rooms')

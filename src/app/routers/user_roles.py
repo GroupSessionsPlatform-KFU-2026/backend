@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status
+from fastapi import APIRouter, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.repositories import (
     RoleRepositoryDep,
     UserRepositoryDep,
@@ -9,6 +10,7 @@ from src.app.dependencies.repositories import (
 )
 from src.app.dependencies.security import require_scoped_user
 from src.app.models.user_role import UserRoleLink
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/users',
@@ -19,6 +21,10 @@ router = APIRouter(
 @router.post(
     '/{user_id}/roles/{role_name}',
     dependencies=[Security(require_scoped_user, scopes=['users:write'])],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def assign_role_to_user(
     user_id: UUID,
@@ -29,19 +35,13 @@ async def assign_role_to_user(
 ):
     user = await user_repository.get(user_id)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found',
-        )
+        raise NotFoundError
 
     role = await role_repository.get_one_by_filters(
         extra_filters={'name': role_name},
     )
     if role is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Role not found',
-        )
+        raise NotFoundError
 
     existing_link = await user_role_repository.get_one_by_filters(
         extra_filters={

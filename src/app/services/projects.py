@@ -1,5 +1,7 @@
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
+
+from fastapi import HTTPException, status
 
 from src.app.dependencies.repositories import (
     ProjectRepository,
@@ -43,20 +45,29 @@ class ProjectService:
         project = Project(**project_dump, is_archived=False)
         return await self.__project_repository.save(project)
 
-    async def get_project(self, project_id: UUID) -> Optional[Project]:
-        return await self.__project_repository.get(project_id)
+    async def get_project(self, project_id: UUID) -> Project:
+        project = await self.__project_repository.get(project_id)
+
+        if project is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Project not found',
+            )
+
+        return project
 
     async def update_project(
         self, project_update: ProjectUpdate, project_id: UUID
-    ) -> Optional[Project]:
-        return await self.__project_repository.update(project_id, project_update)
+        ) -> Project:
+        project = await self.__project_repository.update(project_id, project_update)
 
-    async def archive_project(self, project_id: UUID) -> Optional[Project]:
-        project = await self.__project_repository.get(project_id)
         if project is None:
-            return None
-        project.is_archived = True
-        return await self.__project_repository.save(project)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Project not found',
+            )
+
+        return project
 
     async def get_project_tags(self, project_id: UUID) -> Sequence[ProjectTag]:
         filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)
@@ -74,7 +85,7 @@ class ProjectService:
         self,
         project_id: UUID,
         tag_id: UUID,
-    ) -> Optional[ProjectTag]:
+    ) -> ProjectTag:
         filters = ProjectTagFilters(
             project_id=project_id,
             tag_id=tag_id,
@@ -88,7 +99,18 @@ class ProjectService:
         )
 
         if not relations:
-            return None
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Project tag relation not found',
+            )
 
         relation = relations[0]
         return await self.__project_tag_repository.delete(relation.id)
+
+    async def count_projects(self, filters: ProjectFilters) -> int:
+        return await self.__project_repository.count(filters=filters)
+
+
+    async def count_project_tags(self, project_id: UUID) -> int:
+        filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)
+        return await self.__project_tag_repository.count(filters=filters)

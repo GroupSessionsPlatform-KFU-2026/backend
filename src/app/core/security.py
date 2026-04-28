@@ -48,7 +48,7 @@ def create_access_token(
     expires_delta: timedelta | None = None,
 ) -> str:
     lifetime = expires_delta or timedelta(
-        seconds=settings.auth.access_token_lifetime_seconds
+        seconds=settings.auth.access_token_lifetime_seconds,
     )
 
     return _create_token(
@@ -67,7 +67,7 @@ def create_refresh_token(
     expires_delta: timedelta | None = None,
 ) -> str:
     lifetime = expires_delta or timedelta(
-        seconds=settings.auth.refresh_token_lifetime_seconds
+        seconds=settings.auth.refresh_token_lifetime_seconds,
     )
 
     return _create_token(

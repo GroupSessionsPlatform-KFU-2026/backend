@@ -1,8 +1,9 @@
-from typing import Annotated, Optional, Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
+from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.room_access import require_comment_manage_access
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import BoardElementCommentServiceDep
@@ -13,6 +14,8 @@ from src.app.models.board_element_comment import (
 )
 from src.app.models.user import User as UserModel
 from src.app.schemas.board_element_comment_filters import BoardElementCommentFilters
+from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
+from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
     prefix='/rooms/{room_id}/board-elements/{element_id}/comments',
@@ -23,17 +26,32 @@ router = APIRouter(
 @router.get(
     '/',
     dependencies=[Security(require_scoped_user, scopes=['board:read'])],
+    responses=auth_responses,
 )
 async def get_board_element_comments(
     room_id: UUID,
     element_id: UUID,
     filters: Annotated[BoardElementCommentFilters, Query()],
     comment_service: BoardElementCommentServiceDep,
-) -> Sequence[BoardElementCommentPublic]:
-    return await comment_service.get_comments(room_id, element_id, filters)
+) -> PaginatedResponse[BoardElementCommentPublic]:
+    comments = await comment_service.get_comments(room_id, element_id, filters)
+    total = await comment_service.count_comments(room_id, element_id, filters)
+
+    return build_paginated_response(
+        items=list(comments),
+        total=total,
+        offset=filters.offset,
+        limit=filters.limit,
+    )
 
 
-@router.post('/')
+@router.post(
+    '/',
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
+)
 async def create_board_element_comment(
     room_id: UUID,
     element_id: UUID,
@@ -43,14 +61,20 @@ async def create_board_element_comment(
         UserModel,
         Security(require_scoped_user, scopes=['board:write']),
     ],
-) -> Optional[BoardElementCommentPublic]:
+) -> BoardElementCommentPublic:
     comment_create = comment_create.model_copy(
         update={
             'board_element_id': element_id,
             'author_id': current_user.id,
-        }
+        },
     )
-    return await comment_service.create_comment(room_id, element_id, comment_create)
+
+    comment = await comment_service.create_comment(room_id, element_id, comment_create)
+
+    if comment is None:
+        raise NotFoundError
+
+    return comment
 
 
 @router.put(
@@ -61,6 +85,10 @@ async def create_board_element_comment(
             scopes=['board:write'],
         )
     ],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def update_board_element_comment(
     room_id: UUID,
@@ -68,13 +96,18 @@ async def update_board_element_comment(
     comment_id: UUID,
     comment_update: BoardElementCommentUpdate,
     comment_service: BoardElementCommentServiceDep,
-) -> Optional[BoardElementCommentPublic]:
-    return await comment_service.update_comment(
+) -> BoardElementCommentPublic:
+    comment = await comment_service.update_comment(
         room_id,
         element_id,
         comment_id,
         comment_update,
     )
+
+    if comment is None:
+        raise NotFoundError()
+
+    return comment
 
 
 @router.delete(
@@ -85,11 +118,20 @@ async def update_board_element_comment(
             scopes=['board:delete'],
         )
     ],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
 )
 async def delete_board_element_comment(
     room_id: UUID,
     element_id: UUID,
     comment_id: UUID,
     comment_service: BoardElementCommentServiceDep,
-) -> Optional[BoardElementCommentPublic]:
-    return await comment_service.delete_comment(room_id, element_id, comment_id)
+) -> BoardElementCommentPublic:
+    comment = await comment_service.delete_comment(room_id, element_id, comment_id)
+
+    if comment is None:
+        raise NotFoundError
+
+    return comment

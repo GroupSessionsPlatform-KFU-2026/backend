@@ -1,7 +1,7 @@
 """update refresh sessions token identifiers
 
 Revision ID: a7d308e9b3c0
-Revises: 83ae5d5b1779
+Revises: b95b11e272cf
 Create Date: 2026-04-11 12:37:02.672793
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'a7d308e9b3c0'
-down_revision: Union[str, Sequence[str], None] = '83ae5d5b1779'
+down_revision: Union[str, Sequence[str], None] = 'b95b11e272cf'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
