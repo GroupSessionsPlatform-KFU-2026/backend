@@ -105,7 +105,7 @@ async def update_board_element_comment(
     )
 
     if comment is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return comment
 

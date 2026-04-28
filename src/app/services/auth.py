@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
+from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 
 from src.app.core.security import (
     create_access_token,
@@ -33,22 +34,6 @@ from src.app.services.users import UserService
 from src.app.utils.hashing import get_password_hash
 
 
-class AuthRepositories:
-    def __init__(
-        self,
-        user_repository: UserRepositoryDep,
-        refresh_session_repository: RefreshSessionRepositoryDep,
-        role_repository: RoleRepositoryDep,
-        user_role_repository: UserRoleRepositoryDep,
-        email_notification_repository: EmailNotificationRepositoryDep,
-    ):
-        self.user_repository = user_repository
-        self.refresh_session_repository = refresh_session_repository
-        self.role_repository = role_repository
-        self.user_role_repository = user_role_repository
-        self.email_notification_repository = email_notification_repository
-
-
 class AuthService:
     __user_repository: UserRepository
     __refresh_session_repository: RefreshSessionRepository
@@ -57,19 +42,21 @@ class AuthService:
     __email_notification_repository: EmailNotificationRepository
     __user_service: UserService
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
-        repositories: AuthRepositories,
-        user_service: UserService,
-        email_service: EmailService,
+        user_repository: UserRepositoryDep,
+        refresh_session_repository: RefreshSessionRepositoryDep,
+        role_repository: RoleRepositoryDep,
+        user_role_repository: UserRoleRepositoryDep,
+        email_notification_repository: EmailNotificationRepositoryDep,
+        user_service: Annotated[UserService, Depends(UserService)],
+        email_service: Annotated[EmailService, Depends(EmailService)],
     ):
-        self.__user_repository = repositories.user_repository
-        self.__refresh_session_repository = repositories.refresh_session_repository
-        self.__role_repository = repositories.role_repository
-        self.__user_role_repository = repositories.user_role_repository
-        self.__email_notification_repository = (
-            repositories.email_notification_repository
-        )
+        self.__user_repository = user_repository
+        self.__refresh_session_repository = refresh_session_repository
+        self.__role_repository = role_repository
+        self.__user_role_repository = user_role_repository
+        self.__email_notification_repository = email_notification_repository
         self.__user_service = user_service
         self.__email_service = email_service
 
@@ -562,13 +549,12 @@ class AuthService:
 
     def _build_verify_url(self, user_id: UUID, code: UUID) -> str:
         return (
-            f'{settings.email.app_base_url}'
+            f'{settings.common.frontend_host}'
             f'/verify-account?user_id={user_id}&code={code}'
         )
 
     def _build_password_reset_url(self, user_id: UUID, code: UUID) -> str:
         return (
-            f'{settings.email.app_base_url}'
+            f'{settings.common.frontend_host}'
             f'/reset-password?user_id={user_id}&code={code}'
         )
-

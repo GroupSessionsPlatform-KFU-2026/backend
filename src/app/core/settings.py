@@ -1,13 +1,10 @@
 from functools import lru_cache
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AuthSettings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix='AUTH_',
-    )
     secret: str = 'secret'
     access_token_lifetime_seconds: int = 300
     refresh_token_lifetime_seconds: int = 600
@@ -16,43 +13,47 @@ class AuthSettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file='.env',
-        extra='ignore',
-    )
+    driver: str = 'postgresql+asyncpg'
+    host: str = 'localhost'
+    user: str = 'postgres'
+    password: str = 'pass'
+    port: int = 5432
+    name: str = 'db'
 
-    db_schema: str = 'postgresql+asyncpg'
-    db_host: str = 'localhost'
-    db_user: str = 'postgres'
-    db_password: str = 'pass'
-    db_port: int = 5432
-    db_name: str = 'db'
 
-class PomodoroDefaultsSettings(BaseModel):
+class PomodoroDefaultsSettings(BaseSettings):
     work_duration: int = Field(default=25, gt=0)
     short_break_duration: int = Field(default=5, gt=0)
     long_break_duration: int = Field(default=15, gt=0)
     cycles_before_long: int = Field(default=4, gt=0)
 
-class RBACSettings(BaseModel):
+
+class RBACSettings(BaseSettings):
     admin_email: str = 'admin@example.com'
     admin_password: str = 'admin123456'
     admin_role: str = 'admin'
     public_role: str = 'public'
 
 
-class SocketSettings(BaseModel):
+class SocketSettings(BaseSettings):
     cors_allowed_origins: str | list[str] = '*'
     path: str = 'socket.io'
 
 
-class CommonSettings(BaseModel):
-    host: str = 'http://localhost:8000'
-    frontend_host: str = 'http://localhost:5173'
+class CommonSettings(BaseSettings):
+    scheme: str = 'http'
+    host: str = 'localhost'
+    backend_port: int = 8000
+    frontend_port: int = 5173
     cors_allowed_origins: list[str] = [
-        'http://localhost:5173',
+        'http://localhost',
+        'http://localhost:80',
         'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:8000',
         'http://localhost:8080',
+        'http://127.0.0.1:8000',
+        'http://0.0.0.0:8000',
     ]
     cors_allowed_methods: list[str] = [
         'GET',
@@ -68,13 +69,21 @@ class CommonSettings(BaseModel):
         'Accept',
     ]
 
+    @property
+    def backend_host(self) -> str:
+        return f'{self.scheme}://{self.host}:{self.backend_port}'
 
-class RateLimitSettings(BaseModel):
+    @property
+    def frontend_host(self) -> str:
+        return f'{self.scheme}://{self.host}:{self.frontend_port}'
+
+
+class RateLimitSettings(BaseSettings):
     default: str = '100/minute'
     auth: str = '10/minute'
 
 
-class EmailSettings(BaseModel):
+class EmailSettings(BaseSettings):
     username: str = 'studiom.backend@gmail.com'
     password: str = ''
     server: str = 'smtp.gmail.com'
@@ -86,7 +95,6 @@ class EmailSettings(BaseModel):
     use_credentials: bool = True
     validate_certs: bool = True
     notification_lifetime_seconds: int = 3600
-    app_base_url: str = 'http://localhost:5173'
     template_folder: str = 'src/app/templates'
 
 
@@ -105,7 +113,6 @@ class Settings(BaseSettings):
     common: CommonSettings = CommonSettings()
     rate_limit: RateLimitSettings = RateLimitSettings()
     pomodoro: PomodoroDefaultsSettings = PomodoroDefaultsSettings()
-
 
 
 @lru_cache

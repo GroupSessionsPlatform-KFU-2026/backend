@@ -81,7 +81,7 @@ def custom_openapi():
         routes=fastapi_app.routes,
         servers=[
             {
-                'url': settings.common.host,
+                'url': settings.common.backend_host,
                 'description': 'Local server',
             },
         ],
