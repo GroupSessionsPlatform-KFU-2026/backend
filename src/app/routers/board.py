@@ -88,7 +88,7 @@ async def update_board_element(
     element = await board_service.update_element(room_id, element_id, element_update)
 
     if element is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return element
 
