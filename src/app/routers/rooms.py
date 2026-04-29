@@ -74,7 +74,7 @@ async def join_room(
     participant = await room_service.join_room(payload, current_user.id)
 
     if participant is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return participant
 
@@ -98,7 +98,7 @@ async def update_room(
     room = await room_service.update_room(room_update, room_id, current_user.id)
 
     if room is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return room
 
@@ -121,6 +121,6 @@ async def end_room(
     room = await room_service.end_room(room_id, current_user.id)
 
     if room is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return room

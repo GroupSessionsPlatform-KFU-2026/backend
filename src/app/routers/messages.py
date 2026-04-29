@@ -88,7 +88,7 @@ async def update_message(
     message = await chat_service.update_message(room_id, message_id, message_update)
 
     if message is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return message
 
@@ -114,6 +114,6 @@ async def delete_message(
     message = await chat_service.delete_message(room_id, message_id)
 
     if message is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return message

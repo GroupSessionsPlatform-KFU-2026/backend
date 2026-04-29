@@ -26,38 +26,10 @@ REGISTER_RESPONSES = {
     409: {
         'model': ErrorSchema,
         'description': 'Email or username already exists',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'email_exists': {
-                        'summary': 'Email already exists',
-                        'value': {
-                            'message': 'User with this email already exists',
-                            'detail': {},
-                        },
-                    },
-                    'username_exists': {
-                        'summary': 'Username already exists',
-                        'value': {
-                            'message': 'User with this username already exists',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
     500: {
         'model': ErrorSchema,
         'description': 'Public role is not initialized',
-        'content': {
-            'application/json': {
-                'example': {
-                    'message': 'Public role is not initialized',
-                    'detail': {},
-                }
-            }
-        },
     },
 }
 
@@ -65,26 +37,10 @@ LOGIN_RESPONSES = {
     401: {
         'model': ErrorSchema,
         'description': 'Invalid credentials',
-        'content': {
-            'application/json': {
-                'example': {
-                    'message': 'Invalid email or password',
-                    'detail': {},
-                }
-            }
-        },
     },
     403: {
         'model': ErrorSchema,
         'description': 'Account is not verified',
-        'content': {
-            'application/json': {
-                'example': {
-                    'message': 'Account is not verified',
-                    'detail': {},
-                }
-            }
-        },
     },
 }
 
@@ -92,40 +48,6 @@ REFRESH_RESPONSES = {
     401: {
         'model': ErrorSchema,
         'description': 'Refresh token error',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'not_provided': {
-                        'summary': 'Refresh token was not provided',
-                        'value': {
-                            'message': 'Refresh token was not provided',
-                            'detail': {},
-                        },
-                    },
-                    'invalid': {
-                        'summary': 'Invalid refresh token',
-                        'value': {
-                            'message': 'Invalid refresh token',
-                            'detail': {},
-                        },
-                    },
-                    'invalid_session': {
-                        'summary': 'Refresh session is invalid',
-                        'value': {
-                            'message': 'Refresh session is invalid',
-                            'detail': {},
-                        },
-                    },
-                    'expired': {
-                        'summary': 'Refresh token expired',
-                        'value': {
-                            'message': 'Refresh token expired',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
 }
 
@@ -133,26 +55,6 @@ LOGOUT_RESPONSES = {
     401: {
         'model': ErrorSchema,
         'description': 'Refresh token error',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'not_provided': {
-                        'summary': 'Refresh token was not provided',
-                        'value': {
-                            'message': 'Refresh token was not provided',
-                            'detail': {},
-                        },
-                    },
-                    'invalid': {
-                        'summary': 'Invalid refresh token',
-                        'value': {
-                            'message': 'Invalid refresh token',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
 }
 
@@ -160,50 +62,10 @@ VERIFY_RESPONSES = {
     400: {
         'model': ErrorSchema,
         'description': 'Notification already used or expired',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'already_used': {
-                        'summary': 'Email notification already used',
-                        'value': {
-                            'message': 'Email notification already used',
-                            'detail': {},
-                        },
-                    },
-                    'expired': {
-                        'summary': 'Email notification expired',
-                        'value': {
-                            'message': 'Email notification expired',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
     404: {
         'model': ErrorSchema,
         'description': 'User or email notification not found',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'user_not_found': {
-                        'summary': 'User not found',
-                        'value': {
-                            'message': 'User not found',
-                            'detail': {},
-                        },
-                    },
-                    'notification_not_found': {
-                        'summary': 'Email notification not found',
-                        'value': {
-                            'message': 'Email notification not found',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
 }
 
@@ -211,14 +73,6 @@ SEND_RESET_CODE_RESPONSES = {
     404: {
         'model': ErrorSchema,
         'description': 'User not found',
-        'content': {
-            'application/json': {
-                'example': {
-                    'message': 'User not found',
-                    'detail': {},
-                }
-            }
-        },
     },
 }
 
@@ -226,57 +80,10 @@ CONFIRM_RESET_RESPONSES = {
     400: {
         'model': ErrorSchema,
         'description': 'Validation error in reset confirmation',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'passwords_do_not_match': {
-                        'summary': 'Passwords do not match',
-                        'value': {
-                            'message': 'Passwords do not match',
-                            'detail': {},
-                        },
-                    },
-                    'notification_already_used': {
-                        'summary': 'Email notification already used',
-                        'value': {
-                            'message': 'Email notification already used',
-                            'detail': {},
-                        },
-                    },
-                    'notification_expired': {
-                        'summary': 'Email notification expired',
-                        'value': {
-                            'message': 'Email notification expired',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
     404: {
         'model': ErrorSchema,
         'description': 'User or email notification not found',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'user_not_found': {
-                        'summary': 'User not found',
-                        'value': {
-                            'message': 'User not found',
-                            'detail': {},
-                        },
-                    },
-                    'notification_not_found': {
-                        'summary': 'Email notification not found',
-                        'value': {
-                            'message': 'Email notification not found',
-                            'detail': {},
-                        },
-                    },
-                }
-            }
-        },
     },
 }
 

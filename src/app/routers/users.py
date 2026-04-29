@@ -44,6 +44,6 @@ async def get_user(
     user = await user_service.get_user(user_id)
 
     if user is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return user

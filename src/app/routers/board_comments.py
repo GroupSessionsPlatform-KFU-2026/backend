@@ -72,7 +72,7 @@ async def create_board_element_comment(
     comment = await comment_service.create_comment(room_id, element_id, comment_create)
 
     if comment is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return comment
 
@@ -132,6 +132,6 @@ async def delete_board_element_comment(
     comment = await comment_service.delete_comment(room_id, element_id, comment_id)
 
     if comment is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return comment

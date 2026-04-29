@@ -65,7 +65,7 @@ async def update_participant(
     )
 
     if participant is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return participant
 
@@ -91,6 +91,6 @@ async def remove_participant(
     participant = await participant_service.remove_participant(room_id, user_id)
 
     if participant is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return participant

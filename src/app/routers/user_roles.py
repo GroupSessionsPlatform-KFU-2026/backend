@@ -35,13 +35,13 @@ async def assign_role_to_user(
 ):
     user = await user_repository.get(user_id)
     if user is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     role = await role_repository.get_one_by_filters(
         extra_filters={'name': role_name},
     )
     if role is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     existing_link = await user_role_repository.get_one_by_filters(
         extra_filters={
