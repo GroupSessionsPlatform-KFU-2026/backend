@@ -31,6 +31,7 @@ class UserPublic(BaseModel, UserBase):
         sa_type=TIMESTAMP(timezone=True),
     )
     is_active: bool
+    is_verified: bool
 
 
 class UserCreate(UserBase):
@@ -51,12 +52,11 @@ class User(UserPublic, table=True):
         UniqueConstraint('username', name='uq_user_username'),
     )
     password_hash: str
-
+    is_verified: bool = Field(default=False, nullable=False)
     roles: list['Role'] = Relationship(
         back_populates='users',
         link_model=UserRoleLink,
     )
-
     projects: list['Project'] = Relationship(back_populates='owner')
     created_rooms: list['Room'] = Relationship(back_populates='creator')
     participations: list['RoomParticipant'] = Relationship(back_populates='user')

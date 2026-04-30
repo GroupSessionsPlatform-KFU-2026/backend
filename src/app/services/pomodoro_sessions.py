@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Sequence
 from uuid import UUID
 
+from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     PomodoroSessionRepository,
     PomodoroSessionRepositoryDep,
@@ -49,16 +51,32 @@ class PomodoroSessionService:
     async def get_pomodoro(
         self,
         pomodoro_id: UUID,
-    ) -> Optional[PomodoroSession]:
-        return await self.__repository.get(pomodoro_id)
+    ) -> PomodoroSession:
+        pomodoro = await self.__repository.get(pomodoro_id)
+
+        if pomodoro is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Pomodoro session not found',
+            )
+
+        return pomodoro
 
     async def get_room_pomodoro(
         self,
         room_id: UUID,
-    ) -> Optional[PomodoroSession]:
-        return await self.__repository.get_one_by_filters(
+    ) -> PomodoroSession:
+        session = await self.__repository.get_one_by_filters(
             extra_filters={'room_id': room_id},
         )
+
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Pomodoro session not found',
+            )
+
+        return session
 
     async def update_pomodoro(
         self,
@@ -71,19 +89,15 @@ class PomodoroSessionService:
         self,
         room_id: UUID,
         pomodoro_update: PomodoroSessionUpdate,
-    ) -> Optional[PomodoroSession]:
+    ) -> PomodoroSession:
         session = await self.get_room_pomodoro(room_id)
-        if session is None:
-            return None
         return await self.__repository.update(session.id, pomodoro_update)
 
     async def start_pomodoro(
         self,
         room_id: UUID,
-    ) -> Optional[PomodoroSession]:
+    ) -> PomodoroSession:
         session = await self.get_room_pomodoro(room_id)
-        if session is None:
-            return None
 
         now = datetime.now(timezone.utc)
 
@@ -97,15 +111,14 @@ class PomodoroSessionService:
 
         session.is_running = True
         session.phase_ends_at = now + timedelta(minutes=duration)
+
         return await self.__repository.save(session)
 
     async def pause_pomodoro(
         self,
         room_id: UUID,
-    ) -> Optional[PomodoroSession]:
+    ) -> PomodoroSession:
         session = await self.get_room_pomodoro(room_id)
-        if session is None:
-            return None
 
         session.is_running = False
         return await self.__repository.save(session)
@@ -113,14 +126,13 @@ class PomodoroSessionService:
     async def reset_pomodoro(
         self,
         room_id: UUID,
-    ) -> Optional[PomodoroSession]:
+    ) -> PomodoroSession:
         session = await self.get_room_pomodoro(room_id)
-        if session is None:
-            return None
 
         session.completed_cycles = 0
         session.current_phase = PomodoroPhase.WORK
         session.is_running = False
         session.phase_ends_at = None
         session.session_ends_at = None
+
         return await self.__repository.save(session)

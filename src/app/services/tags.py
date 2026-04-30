@@ -39,3 +39,6 @@ class TagService:
 
     async def delete_tag(self, tag_id: UUID) -> Optional[Tag]:
         return await self.__repository.delete(tag_id)
+
+    async def count_tags(self, filters: TagFilters) -> int:
+        return await self.__repository.count(filters=filters)

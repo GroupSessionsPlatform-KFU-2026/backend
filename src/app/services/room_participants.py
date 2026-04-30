@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
+
+from fastapi import HTTPException, status
 
 from src.app.dependencies.repositories import (
     RoomParticipantRepository,
@@ -50,7 +52,7 @@ class RoomParticipantService:
         self,
         room_id: UUID,
         user_id: UUID,
-    ) -> Optional[RoomParticipant]:
+    ) -> RoomParticipant:
         participants = await self.__repository.fetch(
             extra_filters={
                 'room_id': room_id,
@@ -58,27 +60,40 @@ class RoomParticipantService:
             },
             limit=1,
         )
-        return participants[0] if participants else None
+
+        if not participants:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room participant not found',
+            )
+
+        return participants[0]
 
     async def update_participant(
         self,
         room_id: UUID,
         user_id: UUID,
         participant_update: RoomParticipantUpdate,
-    ) -> Optional[RoomParticipant]:
+    ) -> RoomParticipant:
         participant = await self.get_participant_in_room(room_id, user_id)
-        if participant is None:
-            return None
         return await self.__repository.update(participant.id, participant_update)
 
     async def remove_participant(
         self,
         room_id: UUID,
         user_id: UUID,
-    ) -> Optional[RoomParticipant]:
+    ) -> RoomParticipant:
         participant = await self.get_participant_in_room(room_id, user_id)
-        if participant is None:
-            return None
 
         participant.left_at = datetime.now(timezone.utc)
         return await self.__repository.save(participant)
+
+    async def count_participants(
+        self,
+        room_id: UUID,
+        filters: RoomParticipantFilters,
+    ) -> int:
+        return await self.__repository.count(
+            filters=filters,
+            extra_filters={'room_id': room_id},
+        )

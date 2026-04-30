@@ -1,3 +1,4 @@
+from .base import BaseModel
 from .board_element import (
     BoardElement,
     BoardElementBase,
@@ -18,6 +19,15 @@ from .chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
     ChatMessageUpdate,
+)
+from .email import (
+    EmailAction,
+    EmailNotification,
+)
+from .permission import (
+    Permission,
+    PermissionBase,
+    PermissionPublic,
 )
 from .pomodoro_session import (
     PomodoroSession,
@@ -40,6 +50,13 @@ from .project_tag import (
     ProjectTagPublic,
     ProjectTagUpdate,
 )
+from .refresh_session import RefreshSession
+from .role import (
+    Role,
+    RoleBase,
+    RolePublic,
+)
+from .role_permission import RolePermissionLink
 from .room import (
     Room,
     RoomBase,
@@ -68,8 +85,10 @@ from .user import (
     UserPublic,
     UserUpdate,
 )
+from .user_role import UserRoleLink
 
 __all__ = [
+    'BaseModel',
     'BoardElement',
     'BoardElementBase',
     'BoardElementCreate',
@@ -120,4 +139,15 @@ __all__ = [
     'UserCreate',
     'UserPublic',
     'UserUpdate',
+    'EmailAction',
+    'EmailNotification',
+    'Permission',
+    'PermissionBase',
+    'PermissionPublic',
+    'RefreshSession',
+    'Role',
+    'RoleBase',
+    'RolePublic',
+    'RolePermissionLink',
+    'UserRoleLink',
 ]
