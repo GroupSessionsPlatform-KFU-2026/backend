@@ -1,13 +1,9 @@
 import sys
 from pathlib import Path
 
-from src.app.models.role import Role
-from src.app.models.permission import Permission
-from src.app.models.user_role import UserRoleLink
-from src.app.models.role_permission import RolePermissionLink
 from src.app.db.engine import form_db_url
 from src.app.models.base import BaseModel
-from src.app.models.refresh_session import RefreshSession
+
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'src'))
 
 import asyncio

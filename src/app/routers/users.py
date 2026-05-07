@@ -1,13 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from src.app.core.responses import auth_responses, detail_responses
 from src.app.dependencies.security import require_scoped_user
+from src.app.dependencies.services import UserServiceDep
 from src.app.models.user import User as UserModel
 from src.app.models.user import UserPublic
-from src.app.services.users import UserService
 from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
@@ -39,7 +39,7 @@ async def get_me(
 )
 async def get_user(
     user_id: UUID,
-    user_service: UserService = Depends(UserService),
+    user_service: UserServiceDep,
 ) -> UserPublic:
     user = await user_service.get_user(user_id)
 

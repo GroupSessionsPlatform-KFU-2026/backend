@@ -11,7 +11,6 @@ import sqlmodel
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-
 revision = 'b95b11e272cf'
 down_revision = 'f1146c74a873'
 branch_labels = None
