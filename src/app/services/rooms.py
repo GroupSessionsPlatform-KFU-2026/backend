@@ -1,10 +1,11 @@
 import secrets
 import string
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
 
 from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     PomodoroSessionRepository,
     PomodoroSessionRepositoryDep,
@@ -27,9 +28,9 @@ def generate_room_code(length: int = 6) -> str:
 def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
     return PomodoroSession(
         room_id=room_id,
-        work_duration=1500,    
-        short_break_duration=300,   
-        long_break_duration=900,     
+        work_duration=1500,
+        short_break_duration=300,
+        long_break_duration=900,
         cycles_before_long=4,
         current_phase=PomodoroPhase.WORK,
         completed_cycles=0,

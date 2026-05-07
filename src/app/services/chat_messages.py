@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
+
 from fastapi import HTTPException, status
 
 from src.app.dependencies.repositories import (
@@ -90,7 +91,7 @@ class ChatMessageService:
     ) -> ChatMessage:
         message = await self.get_message_in_room(room_id, message_id)
         return await self.__repository.delete(message.id)
-    
+
     async def count_messages(
         self,
         room_id: UUID,

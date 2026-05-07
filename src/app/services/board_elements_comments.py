@@ -1,6 +1,8 @@
 from typing import Optional, Sequence
 from uuid import UUID
+
 from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     BoardElementCommentRepository,
     BoardElementCommentRepositoryDep,
@@ -128,7 +130,7 @@ class BoardElementCommentService:
 
         comment.is_deleted = True
         return await self.__repository.save(comment)
-    
+
     async def count_comments(
         self,
         room_id: UUID,

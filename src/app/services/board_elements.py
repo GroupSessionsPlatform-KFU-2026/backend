@@ -1,5 +1,6 @@
 from typing import Optional, Sequence
 from uuid import UUID
+
 from fastapi import HTTPException, status
 
 from src.app.dependencies.repositories import (
@@ -90,7 +91,7 @@ class BoardElementService:
 
         element.is_deleted = True
         return await self.__repository.save(element)
-    
+
     async def count_elements(
         self,
         room_id: UUID,

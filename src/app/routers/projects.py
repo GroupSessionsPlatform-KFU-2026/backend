@@ -62,7 +62,7 @@ async def get_project(
     project = await project_service.get_project(project_id)
 
     if project is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return project
 
@@ -80,7 +80,7 @@ async def update_project(
     project = await project_service.update_project(project_update, project_id)
 
     if project is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return project
 
@@ -97,7 +97,7 @@ async def archive_project(
     project = await project_service.archive_project(project_id)
 
     if project is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return project
 
@@ -140,6 +140,6 @@ async def remove_tag_from_project(
     project_tag = await project_service.remove_tag_from_project(project_id, tag_id)
 
     if project_tag is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return project_tag

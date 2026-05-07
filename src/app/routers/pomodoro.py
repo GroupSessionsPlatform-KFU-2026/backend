@@ -33,7 +33,7 @@ async def get_room_pomodoro(
     pomodoro = await pomodoro_service.get_room_pomodoro(room_id)
 
     if pomodoro is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return pomodoro
 
@@ -59,7 +59,7 @@ async def update_pomodoro_settings(
     pomodoro = await pomodoro_service.update_room_pomodoro(room_id, pomodoro_update)
 
     if pomodoro is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return pomodoro
 
@@ -84,7 +84,7 @@ async def start_pomodoro(
     pomodoro = await pomodoro_service.start_pomodoro(room_id)
 
     if pomodoro is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return pomodoro
 
@@ -109,7 +109,7 @@ async def pause_pomodoro(
     pomodoro = await pomodoro_service.pause_pomodoro(room_id)
 
     if pomodoro is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return pomodoro
 
@@ -134,6 +134,6 @@ async def reset_pomodoro(
     pomodoro = await pomodoro_service.reset_pomodoro(room_id)
 
     if pomodoro is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return pomodoro

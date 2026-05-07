@@ -8,6 +8,7 @@ from src.app.core.settings import settings
 from src.app.dependencies.security import AuthenticatedUserDep
 from src.app.dependencies.services import get_auth_service
 from src.app.models.user import UserCreate
+from src.app.schemas.errors import ErrorSchema
 from src.app.schemas.security import (
     LogoutResponse,
     PasswordResetConfirmRequest,
@@ -24,111 +25,67 @@ router = APIRouter(
 
 REGISTER_RESPONSES = {
     409: {
+        'model': ErrorSchema,
         'description': 'Email or username already exists',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'email_exists': {
-                        'summary': 'Email already exists',
-                        'value': {'detail': 'User with this email already exists'},
-                    },
-                    'username_exists': {
-                        'summary': 'Username already exists',
-                        'value': {'detail': 'User with this username already exists'},
-                    },
-                }
-            }
-        },
     },
     500: {
+        'model': ErrorSchema,
         'description': 'Public role is not initialized',
-        'content': {
-            'application/json': {
-                'example': {'detail': 'Public role is not initialized'}
-            }
-        },
     },
 }
 
 LOGIN_RESPONSES = {
     401: {
+        'model': ErrorSchema,
         'description': 'Invalid credentials',
-        'content': {
-            'application/json': {
-                'example': {'detail': 'Invalid email or password'}
-            }
-        },
     },
     403: {
+        'model': ErrorSchema,
         'description': 'Account is not verified',
-        'content': {
-            'application/json': {
-                'example': {'detail': 'Account is not verified'}
-            }
-        },
     },
 }
 
 REFRESH_RESPONSES = {
     401: {
+        'model': ErrorSchema,
         'description': 'Refresh token error',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'not_provided': {
-                        'summary': 'Refresh token was not provided',
-                        'value': {'detail': 'Refresh token was not provided'},
-                    },
-                    'invalid': {
-                        'summary': 'Invalid refresh token',
-                        'value': {'detail': 'Invalid refresh token'},
-                    },
-                    'invalid_session': {
-                        'summary': 'Refresh session is invalid',
-                        'value': {'detail': 'Refresh session is invalid'},
-                    },
-                    'expired': {
-                        'summary': 'Refresh token expired',
-                        'value': {'detail': 'Refresh token expired'},
-                    },
-                }
-            }
-        },
     },
 }
 
 LOGOUT_RESPONSES = {
     401: {
+        'model': ErrorSchema,
         'description': 'Refresh token error',
-        'content': {
-            'application/json': {
-                'examples': {
-                    'not_provided': {
-                        'summary': 'Refresh token was not provided',
-                        'value': {'detail': 'Refresh token was not provided'},
-                    },
-                    'invalid': {
-                        'summary': 'Invalid refresh token',
-                        'value': {'detail': 'Invalid refresh token'},
-                    },
-                }
-            }
-        },
     },
 }
 
 VERIFY_RESPONSES = {
-    400: {'description': 'Notification already used or expired'},
-    404: {'description': 'User or email notification not found'},
+    400: {
+        'model': ErrorSchema,
+        'description': 'Notification already used or expired',
+    },
+    404: {
+        'model': ErrorSchema,
+        'description': 'User or email notification not found',
+    },
 }
 
 SEND_RESET_CODE_RESPONSES = {
-    404: {'description': 'User not found'},
+    404: {
+        'model': ErrorSchema,
+        'description': 'User not found',
+    },
 }
 
 CONFIRM_RESET_RESPONSES = {
-    400: {'description': 'Validation error in reset confirmation'},
-    404: {'description': 'User or email notification not found'},
+    400: {
+        'model': ErrorSchema,
+        'description': 'Validation error in reset confirmation',
+    },
+    404: {
+        'model': ErrorSchema,
+        'description': 'User or email notification not found',
+    },
 }
 
 
@@ -141,7 +98,7 @@ CONFIRM_RESET_RESPONSES = {
 async def register(
     request: Request,
     user_create: UserCreate,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> RegisterResponse:
     return await auth_service.register(user_create)
 
@@ -155,7 +112,7 @@ async def login(
     request: Request,
     response: Response,
     user: AuthenticatedUserDep,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> TokenData:
     token_data = await auth_service.login(user)
 
@@ -177,7 +134,7 @@ async def login(
 )
 async def refresh(
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
     refresh_token: Annotated[str | None, Cookie()] = None,
 ) -> TokenData:
     token_data = await auth_service.refresh(refresh_token)
@@ -200,7 +157,7 @@ async def refresh(
 )
 async def logout(
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
     refresh_token: Annotated[str | None, Cookie()] = None,
 ) -> LogoutResponse:
     logout_response = await auth_service.logout(refresh_token)
@@ -220,7 +177,7 @@ async def logout(
 async def verify_account(
     user_id: UUID,
     code: Annotated[UUID, Query()],
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> RegisterResponse:
     return await auth_service.verify_account(user_id, code)
 
@@ -231,7 +188,7 @@ async def verify_account(
 )
 async def send_password_reset_code(
     user_id: UUID,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> RegisterResponse:
     return await auth_service.send_password_reset_code(user_id)
 
@@ -243,7 +200,7 @@ async def send_password_reset_code(
 async def confirm_password_reset(
     user_id: UUID,
     payload: PasswordResetConfirmRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> RegisterResponse:
     return await auth_service.confirm_password_reset(
         user_id=user_id,

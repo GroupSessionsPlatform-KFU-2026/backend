@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
-from typing import Optional, Sequence
+from typing import Sequence
 from uuid import UUID
+
 from fastapi import HTTPException, status
+
 from src.app.dependencies.repositories import (
     RoomParticipantRepository,
     RoomParticipantRepositoryDep,
@@ -85,7 +87,7 @@ class RoomParticipantService:
 
         participant.left_at = datetime.now(timezone.utc)
         return await self.__repository.save(participant)
-    
+
     async def count_participants(
         self,
         room_id: UUID,

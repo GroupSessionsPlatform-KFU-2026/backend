@@ -1,5 +1,4 @@
 from .base import BaseModel
-
 from .board_element import (
     BoardElement,
     BoardElementBase,

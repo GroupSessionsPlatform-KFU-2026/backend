@@ -64,7 +64,7 @@ async def get_tag(
     tag = await tag_service.get_tag(tag_id)
 
     if tag is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return tag
 
@@ -85,7 +85,7 @@ async def update_tag(
     tag = await tag_service.update_tag(tag_update, tag_id)
 
     if tag is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return tag
 
@@ -105,6 +105,6 @@ async def delete_tag(
     tag = await tag_service.delete_tag(tag_id)
 
     if tag is None:
-        raise NotFoundError
+        raise NotFoundError()
 
     return tag
