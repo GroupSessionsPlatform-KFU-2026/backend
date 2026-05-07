@@ -154,3 +154,4 @@ class RBACBootstrapService:
 
         link = UserRoleLink(user_id=user_id, role_id=role_id)
         await self.__user_role_repository.save(link)
+
