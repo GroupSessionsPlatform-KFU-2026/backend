@@ -46,24 +46,22 @@ class RBACBootstrapService:
 
     async def bootstrap(self) -> None:
         print('RBAC bootstrap started')
-
-        admin_role_id = await self.__ensure_role_id(settings.rbac.admin_role)
-        public_role_id = await self.__ensure_role_id(settings.rbac.public_role)
-        admin_user_id = await self.__ensure_admin_user_id()
-
         permissions = await self.__ensure_permissions()
 
-        await self.__assign_all_permissions_to_role(admin_role_id, permissions)
+        admin_role = await self.__ensure_role(settings.rbac.admin_role)
+
+        public_role = await self.__ensure_role(settings.rbac.public_role)
+
+        await self.__assign_all_permissions_to_role(admin_role.id, permissions)
         await self.__assign_scopes_to_role(
-            public_role_id,
+            public_role.id,
             INITIAL_ROLE_SCOPES.get(settings.rbac.public_role, []),
             permissions,
         )
 
-        await self.__assign_role_to_user(admin_user_id, admin_role_id)
-
+        admin_user = await self.__ensure_admin_user()
+        await self.__assign_role_to_user(admin_user.id, admin_role.id)
         print('RBAC bootstrap finished')
-
     async def __ensure_permissions(self) -> dict[str, UUID]:
         existing_permissions = await self.__permission_repository.fetch(limit=1000)
         permissions_by_scope: dict[str, UUID] = {
@@ -76,27 +74,20 @@ class RBACBootstrapService:
 
             subject, action = scope.split(':', maxsplit=1)
             permission = Permission(subject=subject, action=action)
-            permission_id = permission.id
-
-            await self.__permission_repository.save(permission)
-
-            permissions_by_scope[scope] = permission_id
+            permission = await self.__permission_repository.save(permission)
+            permissions_by_scope[permission.scope] = permission.id
 
         return permissions_by_scope
 
-    async def __ensure_role_id(self, role_name: str) -> UUID:
+    async def __ensure_role(self, role_name: str) -> Role:
         existing_role = await self.__role_repository.get_one_by_filters(
             extra_filters={'name': role_name},
         )
         if existing_role is not None:
-            return existing_role.id
+            return existing_role
 
         role = Role(name=role_name)
-        role_id = role.id
-
-        await self.__role_repository.save(role)
-
-        return role_id
+        return await self.__role_repository.save(role)
 
     async def __assign_all_permissions_to_role(
         self,
@@ -135,12 +126,12 @@ class RBACBootstrapService:
         link = RolePermissionLink(role_id=role_id, permission_id=permission_id)
         await self.__role_permission_repository.save(link)
 
-    async def __ensure_admin_user_id(self) -> UUID:
+    async def __ensure_admin_user(self) -> User:
         existing_admin = await self.__user_repository.get_one_by_filters(
             filters=UserFilters(email=settings.rbac.admin_email),
         )
         if existing_admin is not None:
-            return existing_admin.id
+            return existing_admin
 
         admin_user = User(
             email=settings.rbac.admin_email,
@@ -149,11 +140,7 @@ class RBACBootstrapService:
             password_hash=get_password_hash(settings.rbac.admin_password),
             is_active=True,
         )
-        admin_user_id = admin_user.id
-
-        await self.__user_repository.save(admin_user)
-
-        return admin_user_id
+        return await self.__user_repository.save(admin_user)
 
     async def __assign_role_to_user(self, user_id: UUID, role_id: UUID) -> None:
         existing_link = await self.__user_role_repository.get_one_by_filters(
@@ -167,4 +154,3 @@ class RBACBootstrapService:
 
         link = UserRoleLink(user_id=user_id, role_id=role_id)
         await self.__user_role_repository.save(link)
-
