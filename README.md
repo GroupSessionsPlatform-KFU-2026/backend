@@ -50,7 +50,7 @@
 ---
 Для генерации AUTH_SECRET можно использовать openssl
 ```bash
-openssh rand -hex 32
+openssl rand -hex 32
 ```
 
 # Инструкции по запуску
@@ -89,3 +89,44 @@ uv run pre-commit install
 
 ```bash
 docker compose up -d
+```
+
+## Запуск через Docker Compose
+
+### Подготовка
+
+Скопировать `.env.example` в `.env`
+
+Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+Windows:
+
+```powershell
+copy .env.example .env
+```
+
+При необходимости изменить значения переменных в `.env`
+
+### Запуск проекта
+
+```bash
+docker compose up
+```
+
+### Доступ к сервисам
+
+| Сервис      | Адрес                       |
+|-------------|-----------------------------|
+| API         | http://localhost/api        |
+| Swagger     | http://localhost/docs       |
+| Healthcheck | http://localhost/api/health |
+
+### Остановка контейнеров
+
+```bash
+docker compose down
+```

@@ -558,3 +558,4 @@ class AuthService:
             f'{settings.common.frontend_host}'
             f'/reset-password?user_id={user_id}&code={code}'
         )
+
