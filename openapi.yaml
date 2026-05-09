@@ -165,10 +165,6 @@ paths:
                 details: null
 
   /api/v1/auth/refresh:
-<<<<<<< HEAD
-  /auth/refresh:
-=======
->>>>>>> 781d067 (clean alembic history and finalize jwt auth)
     post:
       tags: [ auth ]
       summary: Refresh JWT tokens
