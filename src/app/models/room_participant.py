@@ -34,8 +34,9 @@ class RoomParticipantCreate(RoomParticipantBase):
     pass
 
 
-class RoomParticipantUpdate(RoomParticipantBase):
-    pass
+class RoomParticipantUpdate(SQLModel):
+    role: str | None = None
+    is_kicked: bool | None = None
 
 
 class RoomParticipant(RoomParticipantPublic, table=True):

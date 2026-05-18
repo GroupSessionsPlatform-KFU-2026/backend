@@ -7,20 +7,41 @@ from fastapi import HTTPException, status
 from src.app.dependencies.repositories import (
     ChatMessageRepository,
     ChatMessageRepositoryDep,
+    UserRepository,
+    UserRepositoryDep,
 )
 from src.app.models.chat_message import (
     ChatMessage,
     ChatMessageCreate,
     ChatMessageUpdate,
+    ChatMessageWithSender,
 )
 from src.app.schemas.chat_message_filters import ChatMessageFilters
 
 
 class ChatMessageService:
     __repository: ChatMessageRepository
+    __user_repository: UserRepository
 
-    def __init__(self, repository: ChatMessageRepositoryDep):
+    def __init__(
+        self,
+        repository: ChatMessageRepositoryDep,
+        user_repository: UserRepositoryDep,
+    ):
         self.__repository = repository
+        self.__user_repository = user_repository
+
+    async def to_public(self, message: ChatMessage) -> ChatMessageWithSender:
+        sender = await self.__user_repository.get(message.sender_id)
+        message_dump = message.model_dump()
+        message_dump['sender_username'] = sender.username if sender else None
+        return ChatMessageWithSender(**message_dump)
+
+    async def to_public_list(
+        self,
+        messages: Sequence[ChatMessage],
+    ) -> list[ChatMessageWithSender]:
+        return [await self.to_public(message) for message in messages]
 
     async def get_messages(
         self,

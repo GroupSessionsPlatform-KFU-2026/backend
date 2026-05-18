@@ -1,8 +1,7 @@
 from math import ceil
-from typing import TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 from src.app.models.base import BaseModel as ProjectBaseModel
 
@@ -15,7 +14,7 @@ class PaginationInfo(BaseModel):
     total: int
 
 
-class PaginatedResponse(BaseModel, GenericModel[T]):
+class PaginatedResponse(BaseModel, Generic[T]):
     info: PaginationInfo
     items: list[T]
 

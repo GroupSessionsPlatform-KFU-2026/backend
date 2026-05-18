@@ -134,6 +134,9 @@ class SocketConnectionManager:
             to=sid,
         )
 
+    async def force_disconnect(self, sid: str) -> None:
+        await self._sio.disconnect(sid)
+
     async def disconnect(self, sid: str) -> ConnectedClient | None:
         client = self._clients.pop(sid, None)
 

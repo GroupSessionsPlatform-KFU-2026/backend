@@ -3,6 +3,8 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -27,7 +29,16 @@ class PomodoroSessionBase(SQLModel):
 
 class PomodoroSessionPublic(BaseModel, PomodoroSessionBase):
     room_id: UUID
-    current_phase: PomodoroPhase
+    current_phase: PomodoroPhase = Field(
+        sa_column=Column(
+            SAEnum(
+                PomodoroPhase,
+                name='pomodorophase',
+                values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            ),
+            nullable=False,
+        )
+    )
     completed_cycles: int
     phase_ends_at: datetime | None = Field(
         default=None,

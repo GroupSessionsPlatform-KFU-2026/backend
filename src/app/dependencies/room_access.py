@@ -37,6 +37,18 @@ RoomAccessContextDep = Annotated[
 ]
 
 
+async def require_room_access(
+    security_scopes: SecurityScopes,
+    room_id: UUID,
+    ctx: RoomAccessContextDep,
+) -> None:
+    ctx.auth_service.ensure_user_scopes(
+        ctx.current_user,
+        security_scopes.scopes,
+    )
+    await ctx.room_access.get_actor_role(room_id, ctx.current_user.id)
+
+
 async def require_room_moderation_access(
     security_scopes: SecurityScopes,
     room_id: UUID,

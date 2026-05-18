@@ -8,6 +8,8 @@ class BoardElementType(str, Enum):
     BRUSH = 'brush'
     ERASER = 'eraser'
     MARKER = 'marker'
+    QUESTION = 'question'
+    DECISION = 'decision'
     SHAPE = 'shape'
     TEXT = 'text'
 

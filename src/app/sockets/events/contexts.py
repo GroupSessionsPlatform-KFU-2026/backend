@@ -12,6 +12,7 @@ from src.app.services.board_elements_comments import BoardElementCommentService
 from src.app.services.chat_messages import ChatMessageService
 from src.app.services.pomodoro_sessions import PomodoroSessionService
 from src.app.utils.repository import Repository
+from src.app.utils.user_repository import UserRepository
 
 
 class SocketServiceFactory:
@@ -20,7 +21,14 @@ class SocketServiceFactory:
         async with async_session_maker() as db_session:
             room_repository = Repository[Room](db_session)
             chat_repository = Repository[ChatMessage](db_session)
-            yield room_repository, ChatMessageService(repository=chat_repository)
+            user_repository = UserRepository(db_session)
+            yield (
+                room_repository,
+                ChatMessageService(
+                    repository=chat_repository,
+                    user_repository=user_repository,
+                ),
+            )
 
     @asynccontextmanager
     async def board(

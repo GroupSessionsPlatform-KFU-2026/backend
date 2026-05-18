@@ -4,7 +4,10 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Security
 
 from src.app.core.responses import auth_responses, detail_responses
-from src.app.dependencies.room_access import require_comment_manage_access
+from src.app.dependencies.room_access import (
+    require_comment_manage_access,
+    require_room_access,
+)
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import BoardElementCommentServiceDep
 from src.app.models.board_element_comment import (
@@ -25,7 +28,7 @@ router = APIRouter(
 
 @router.get(
     '/',
-    dependencies=[Security(require_scoped_user, scopes=['board:read'])],
+    dependencies=[Security(require_room_access, scopes=['board:read'])],
     responses=auth_responses,
 )
 async def get_board_element_comments(
@@ -38,7 +41,7 @@ async def get_board_element_comments(
     total = await comment_service.count_comments(room_id, element_id, filters)
 
     return build_paginated_response(
-        items=list(comments),
+        items=comment_service.to_public_list(comments),
         total=total,
         offset=filters.offset,
         limit=filters.limit,
@@ -47,6 +50,7 @@ async def get_board_element_comments(
 
 @router.post(
     '/',
+    dependencies=[Security(require_room_access, scopes=['board:write'])],
     responses={
         **auth_responses,
         **detail_responses,
@@ -59,7 +63,7 @@ async def create_board_element_comment(
     comment_service: BoardElementCommentServiceDep,
     current_user: Annotated[
         UserModel,
-        Security(require_scoped_user, scopes=['board:write']),
+        Security(require_scoped_user, scopes=[]),
     ],
 ) -> BoardElementCommentPublic:
     comment_create = comment_create.model_copy(
@@ -74,7 +78,7 @@ async def create_board_element_comment(
     if comment is None:
         raise NotFoundError()
 
-    return comment
+    return comment_service.to_public(comment)
 
 
 @router.put(
@@ -107,7 +111,7 @@ async def update_board_element_comment(
     if comment is None:
         raise NotFoundError()
 
-    return comment
+    return comment_service.to_public(comment)
 
 
 @router.delete(
@@ -134,4 +138,4 @@ async def delete_board_element_comment(
     if comment is None:
         raise NotFoundError()
 
-    return comment
+    return comment_service.to_public(comment)

@@ -10,9 +10,12 @@ from src.app.dependencies.repositories import (
 from src.app.models.board_element import (
     BoardElement,
     BoardElementCreate,
+    BoardElementPublic,
     BoardElementUpdate,
 )
-from src.app.schemas.board_elements_filters import BoardElementFilters
+from src.app.schemas.board_elements_filters import (
+    BoardElementFilters,
+)
 
 
 class BoardElementService:
@@ -20,6 +23,20 @@ class BoardElementService:
 
     def __init__(self, repository: BoardElementRepositoryDep):
         self.__repository = repository
+
+    @staticmethod
+    def to_public(element: BoardElement) -> BoardElementPublic:
+        element_dump = element.model_dump()
+        if element.is_anonymous:
+            element_dump['author_id'] = None
+        return BoardElementPublic(**element_dump)
+
+    @classmethod
+    def to_public_list(
+        cls,
+        elements: Sequence[BoardElement],
+    ) -> list[BoardElementPublic]:
+        return [cls.to_public(element) for element in elements]
 
     async def get_elements(
         self,
@@ -91,6 +108,24 @@ class BoardElementService:
 
         element.is_deleted = True
         return await self.__repository.save(element)
+
+    async def clear_room_elements(self, room_id: UUID) -> int:
+        elements = await self.__repository.fetch(
+            extra_filters={
+                'room_id': room_id,
+                'is_deleted': False,
+            },
+        )
+
+        if not elements:
+            return 0
+
+        elements_to_save = list(elements)
+        for element in elements_to_save:
+            element.is_deleted = True
+
+        await self.__repository.save_all(elements_to_save)
+        return len(elements_to_save)
 
     async def count_elements(
         self,
