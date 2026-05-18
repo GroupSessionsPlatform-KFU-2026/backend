@@ -12,6 +12,8 @@ from src.app.models.user import User as UserModel
 from src.app.schemas.pagination import PaginatedResponse, build_paginated_response
 from src.app.schemas.room_filters import RoomFilters
 from src.app.schemas.room_request import JoinRoomRequest
+from src.app.sockets.events import emit_room_ended_and_disconnect
+from src.app.sockets.server import socket_manager
 from src.app.utils.errors import NotFoundError
 
 router = APIRouter(
@@ -122,5 +124,7 @@ async def end_room(
 
     if room is None:
         raise NotFoundError()
+
+    await emit_room_ended_and_disconnect(socket_manager, room_id)
 
     return room

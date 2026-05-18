@@ -1,6 +1,9 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
@@ -14,6 +17,14 @@ if TYPE_CHECKING:
 class ProjectBase(SQLModel):
     title: str
     description: str | None = None
+    deadline: datetime | None = Field(
+        default=None,
+        sa_type=TIMESTAMP(timezone=True),
+    )
+    required_roles: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB, nullable=False),
+    )
 
 
 class ProjectPublic(BaseModel, ProjectBase):
@@ -22,11 +33,14 @@ class ProjectPublic(BaseModel, ProjectBase):
 
 
 class ProjectCreate(ProjectBase):
-    owner_id: UUID
-
-
-class ProjectUpdate(ProjectBase):
     pass
+
+
+class ProjectUpdate(SQLModel):
+    title: str | None = None
+    description: str | None = None
+    deadline: datetime | None = None
+    required_roles: list[str] | None = None
 
 
 class Project(ProjectPublic, table=True):

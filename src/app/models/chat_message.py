@@ -20,6 +20,10 @@ class ChatMessagePublic(BaseModel, ChatMessageBase):
     is_edited: bool
 
 
+class ChatMessageWithSender(ChatMessagePublic):
+    sender_username: str | None = None
+
+
 class ChatMessageCreate(ChatMessageBase):
     room_id: UUID
     sender_id: UUID

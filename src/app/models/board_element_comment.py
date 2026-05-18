@@ -12,11 +12,12 @@ if TYPE_CHECKING:
 
 class BoardElementCommentBase(SQLModel):
     content: str
+    is_anonymous: bool = Field(default=False, nullable=False)
 
 
 class BoardElementCommentPublic(BaseModel, BoardElementCommentBase):
     board_element_id: UUID
-    author_id: UUID
+    author_id: UUID | None = None
     is_deleted: bool
 
 

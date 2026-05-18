@@ -5,6 +5,7 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
 from src.app.core.settings import settings
 from src.app.schemas.email import EmailSendData
+from src.app.utils.logger import logger
 
 
 class EmailService:
@@ -35,7 +36,19 @@ class EmailService:
         )
 
         self._background_tasks.add_task(
-            self._fast_mail.send_message,
+            self._send_email_safely,
             message,
             email_data.template_name,
+            email_data.email_to,
         )
+
+    async def _send_email_safely(
+        self,
+        message: MessageSchema,
+        template_name: str,
+        email_to: str,
+    ) -> None:
+        try:
+            await self._fast_mail.send_message(message, template_name)
+        except Exception:  # noqa: BLE001, PLW0718
+            logger.exception('Failed to send email notification to %s', email_to)

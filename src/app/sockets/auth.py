@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from fastapi import BackgroundTasks
 from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefusedError
 
 from src.app.dependencies.session import async_session_maker
+from src.app.models.email import EmailNotification
 from src.app.models.refresh_session import RefreshSession
 from src.app.models.role import Role
 from src.app.models.room import Room, RoomStatus
@@ -11,6 +13,7 @@ from src.app.models.room_participant import RoomParticipant
 from src.app.models.user import User
 from src.app.models.user_role import UserRoleLink
 from src.app.services.auth import AuthService
+from src.app.services.email import EmailService
 from src.app.services.users import UserService
 from src.app.utils.repository import Repository
 from src.app.utils.user_repository import UserRepository
@@ -65,16 +68,20 @@ async def authenticate_socket_connection(auth: object) -> SocketAuthContext:
         refresh_session_repository = Repository[RefreshSession](session)
         role_repository = Repository[Role](session)
         user_role_repository = Repository[UserRoleLink](session)
+        email_notification_repository = Repository[EmailNotification](session)
         room_repository = Repository[Room](session)
         room_participant_repository = Repository[RoomParticipant](session)
 
         user_service = UserService(user_repository=user_repository)
+        email_service = EmailService(background_tasks=BackgroundTasks())
         auth_service = AuthService(
             user_repository=user_repository,
             refresh_session_repository=refresh_session_repository,
             role_repository=role_repository,
             user_role_repository=user_role_repository,
+            email_notification_repository=email_notification_repository,
             user_service=user_service,
+            email_service=email_service,
         )
 
         try:

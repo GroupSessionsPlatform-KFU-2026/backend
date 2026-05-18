@@ -27,11 +27,12 @@ class BoardElementBase(SQLModel):
         )
     )
     data: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
+    is_anonymous: bool = Field(default=False, nullable=False)
 
 
 class BoardElementPublic(BaseModel, BoardElementBase):
     room_id: UUID
-    author_id: UUID
+    author_id: UUID | None = None
     is_deleted: bool
 
 
@@ -42,6 +43,11 @@ class BoardElementCreate(BoardElementBase):
 
 class BoardElementUpdate(BoardElementBase):
     pass
+
+
+class BoardClearResponse(SQLModel):
+    room_id: UUID
+    deleted_count: int
 
 
 class BoardElement(BoardElementBase, BaseModel, table=True):
