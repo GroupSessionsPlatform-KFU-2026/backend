@@ -3,6 +3,8 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -35,7 +37,16 @@ class RoomPublic(BaseModel, RoomBase):
         default=None,
         sa_type=TIMESTAMP(timezone=True),
     )
-    status: RoomStatus
+    status: RoomStatus = Field(
+        sa_column=Column(
+            SAEnum(
+                RoomStatus,
+                name='roomstatus',
+                values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            ),
+            nullable=False,
+        )
+    )
 
 
 class RoomCreate(RoomBase):
@@ -56,8 +67,16 @@ class Room(RoomBase, BaseModel, table=True):
         default=None,
         sa_type=TIMESTAMP(timezone=True),
     )
-    ended_at: datetime | None = None
-    status: RoomStatus
+    status: RoomStatus = Field(
+        sa_column=Column(
+            SAEnum(
+                RoomStatus,
+                name='roomstatus',
+                values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            ),
+            nullable=False,
+        )
+    )
 
     project: 'Project' = Relationship(back_populates='rooms')
     creator: 'User' = Relationship(back_populates='created_rooms')

@@ -13,6 +13,7 @@ from src.app.models.board_element import BoardElement
 from src.app.models.board_element_comment import (
     BoardElementComment,
     BoardElementCommentCreate,
+    BoardElementCommentPublic,
     BoardElementCommentUpdate,
 )
 from src.app.schemas.board_element_comment_filters import BoardElementCommentFilters
@@ -29,6 +30,20 @@ class BoardElementCommentService:
     ):
         self.__repository = repository
         self.__board_element_repository = board_element_repository
+
+    @staticmethod
+    def to_public(comment: BoardElementComment) -> BoardElementCommentPublic:
+        comment_dump = comment.model_dump()
+        if comment.is_anonymous:
+            comment_dump['author_id'] = None
+        return BoardElementCommentPublic(**comment_dump)
+
+    @classmethod
+    def to_public_list(
+        cls,
+        comments: Sequence[BoardElementComment],
+    ) -> list[BoardElementCommentPublic]:
+        return [cls.to_public(comment) for comment in comments]
 
     async def get_room_element(
         self,

@@ -6,6 +6,7 @@ from src.app.sockets.events.presence import (
     emit_participant_joined,
     emit_participant_left,
     emit_presence_snapshot_to_room,
+    emit_room_ended_and_disconnect,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     'emit_participant_joined',
     'emit_participant_left',
     'emit_presence_snapshot_to_room',
+    'emit_room_ended_and_disconnect',
 ]
