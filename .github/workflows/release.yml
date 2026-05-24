@@ -57,7 +57,7 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           DOCKER_USER: ${{ vars.DOCKER_USER }}
           DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
-          CI_COMMIT_TAG: ${{ needs.release.outputs.new_release_version }}-gsp-tag
+          CI_COMMIT_TAG: test-gsp-tag
           DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Create .env file
@@ -75,7 +75,7 @@ jobs:
           ANSIBLE_FORCE_COLOR: "true"
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ENV: ~/.env
-          DOCKER_IMAGE_WITH_TAG: ${{ vars.DOCKER_USER }}/${{ vars.DOCKER_IMAGE_NAME}}:${{ needs.release.outputs.new_release_version }}-gsp-tag
+          DOCKER_IMAGE_WITH_TAG: ${{ vars.DOCKER_USER }}/${{ vars.DOCKER_IMAGE_NAME}}:${{ needs.release.outputs.new_release_version }}test-gsp-tag
 
       - name: Cleanup
         if: always()
