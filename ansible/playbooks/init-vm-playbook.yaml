@@ -4,6 +4,8 @@
   become: true
   gather_facts: true
   vars:
+    app_dir: /home/admin-gsp
+    deploy_user: "{{ ansible_user | default('ubuntu') }}"
     test_container_name: hello-container
 
   tasks:

@@ -22,8 +22,8 @@ export RBAC__ADMIN_PASSWORD=<admin-password>
 export COMMON__HOST=<duckdns-domain>
 ```
 
-Optional application variables are defined in `group_vars/all.yml` and can also
-be overridden through environment variables.
+Optional application variables can also be passed through environment variables
+before running the compose update playbook.
 
 ## Commands
 
