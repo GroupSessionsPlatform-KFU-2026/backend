@@ -76,7 +76,7 @@ jobs:
             -i inventory.ini \
             -u ${{ secrets.VM_USER }} \
             --private-key ~/.ssh/host-group-session-platform \
-            playbooks/test-playbook.yaml
+            playbooks/build-image-playbook.yaml
         env:
           ANSIBLE_FORCE_COLOR: "true"
           ANSIBLE_HOST_KEY_CHECKING: "false"
@@ -95,7 +95,7 @@ jobs:
             -i inventory.ini \
             -u ${{ secrets.VM_USER }} \
             --private-key ~/.ssh/host-group-session-platform \
-            playbooks/test-playbook.yaml
+            playbooks/build-image-playbook.yaml
         env:
           ANSIBLE_FORCE_COLOR: "true"
           ANSIBLE_HOST_KEY_CHECKING: "false"
