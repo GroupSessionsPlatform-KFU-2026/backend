@@ -5,7 +5,7 @@
     docker_user: "{{ lookup('env', 'DOCKER_USER') }}"
     docker_image_name: "{{ lookup('env', 'DOCKER_IMAGE_NAME') }}"
     image_tag: "{{ lookup('env', 'CI_COMMIT_TAG') }}"
-    back_image: "{{ docker_user }}/{{ docker_image_name }}:{{ image_tag }}"
+    back_image: "{{ lookup('env', 'DOCKER_IMAGE_WITH_TAG') }}"
     front_image: nginx:latest
     env_path: "{{ lookup('env', 'ENV', default='../../src/.env') }}"
     compose_path: ./compose.yaml

@@ -4,7 +4,7 @@
   become: true
   gather_facts: true
   vars:
-    app_dir: /home/admin-gsp
+    app_dir: "/home/{{ ansible_user }}"
     deploy_user: "{{ ansible_user | default('ubuntu') }}"
     test_container_name: hello-container
 

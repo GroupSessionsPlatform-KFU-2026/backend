@@ -8,7 +8,7 @@ the production Docker Compose stack.
 Set these variables in CI/CD variables or export them locally before deployment:
 
 ```bash
-export DOCKER_IMAGE_NAME=xludw1ng/studiom-backend
+export DOCKER_IMAGE_NAME=studiom-backend
 export DOCKER_IMAGE_TAG=latest
 export DOCKER_USER=<dockerhub-user>
 export DOCKER_TOKEN=<dockerhub-token>
