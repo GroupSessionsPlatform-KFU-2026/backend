@@ -76,7 +76,11 @@ jobs:
             -i inventory.ini \
             -u ${{ secrets.VM_USER }} \
             --private-key ~/.ssh/host-group-session-platform \
-            playbooks/test-playbook.yaml
+            playbooks/build-image-playbook.yaml
         env:
           ANSIBLE_FORCE_COLOR: "true"
           ANSIBLE_HOST_KEY_CHECKING: "false"
+          DOCKER_USER: ${{ vars.DOCKER_USER }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+          CI_COMMIT_TAG: ${{ needs.release.outputs.new_release_version }}-gsp-tag
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
