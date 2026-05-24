@@ -30,6 +30,6 @@ jobs:
 
       - name: Run semantic-release
         id: semantic_release
-        uses: cycjmmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
