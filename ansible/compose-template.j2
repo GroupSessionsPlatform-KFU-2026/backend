@@ -13,11 +13,10 @@ x-back-common: &back-common
   image: *back-image
 
 x-db-base: &db-base
-  postgres:
-    image: postgres:18
-    restart: always
-    env_file:
-      - .env
+  image: postgres:18
+  restart: always
+  env_file:
+    - .env
   healthcheck:
     test: [ "CMD-SHELL", "pg_isready -U ${DB__USER} -d ${DB__NAME}" ]
     interval: 10s
@@ -101,18 +100,17 @@ services:
         DB_POSTGRES_HOST: "proxy_db"
         DB_POSTGRES_PORT: '5432'
         DB_POSTGRES_USER: ${DB__USER}
-        DB_POSTGRES_PASSWORD: ${DB__USER}
+        DB_POSTGRES_PASSWORD: ${DB__PASSWORD}
         DB_POSTGRES_NAME: proxy
         INITIAL_ADMIN_EMAIL: ${PROXY__ADMIN_EMAIL}
         INITIAL_ADMIN_PASSWORD: ${PROXY__ADMIN_PASSWORD}
     volumes:
       - proxy_data:/data
-      - certificates:/etx/letsencrypt
+      - certificates:/etc/letsencrypt
 
 volumes:
   postgres_data:
   proxy_data:
   certificates:
   proxy_postgres_data:
-
 
