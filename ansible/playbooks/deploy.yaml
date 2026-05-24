@@ -1,0 +1,6 @@
+---
+- name: Build and publish Docker image
+  ansible.builtin.import_playbook: build-image-playbook.yaml
+
+- name: Update Compose deployment
+  ansible.builtin.import_playbook: compose-update-playbook.yaml

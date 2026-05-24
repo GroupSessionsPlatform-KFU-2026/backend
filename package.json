@@ -1,0 +1,11 @@
+{
+  "release": {
+    "branches": ["main","ci-cd-branch"],
+    "tagFormat": "v${version}-gsp-tag",
+    "plugin": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ]
+  }
+}

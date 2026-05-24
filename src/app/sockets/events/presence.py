@@ -45,3 +45,20 @@ async def emit_participant_left(
         event='participant.left',
         data=payload,
     )
+
+
+async def emit_room_ended_and_disconnect(
+    socket_manager: SocketConnectionManager,
+    room_id: UUID,
+) -> None:
+    payload = {'room_id': str(room_id)}
+    clients = list(socket_manager.list_clients_in_room(room_id))
+
+    await socket_manager.emit_to_room(
+        room_id=room_id,
+        event='room.ended',
+        data=payload,
+    )
+
+    for client in clients:
+        await socket_manager.force_disconnect(client.sid)

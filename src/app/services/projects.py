@@ -39,13 +39,20 @@ class ProjectService:
             limit=filters.limit,
         )
 
-    # We should change when will have auth
-    async def create_project(self, project_create: ProjectCreate) -> Project:
+    async def create_project(
+        self,
+        project_create: ProjectCreate,
+        owner_id: UUID,
+    ) -> Project:
         project_dump = project_create.model_dump()
-        project = Project(**project_dump, is_archived=False)
+        project = Project(**project_dump, owner_id=owner_id, is_archived=False)
         return await self.__project_repository.save(project)
 
-    async def get_project(self, project_id: UUID) -> Project:
+    async def get_project(
+        self,
+        project_id: UUID,
+        owner_id: UUID | None = None,
+    ) -> Project:
         project = await self.__project_repository.get(project_id)
 
         if project is None:
@@ -54,14 +61,7 @@ class ProjectService:
                 detail='Project not found',
             )
 
-        return project
-
-    async def update_project(
-        self, project_update: ProjectUpdate, project_id: UUID
-        ) -> Project:
-        project = await self.__project_repository.update(project_id, project_update)
-
-        if project is None:
+        if owner_id is not None and project.owner_id != owner_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Project not found',
@@ -69,7 +69,31 @@ class ProjectService:
 
         return project
 
-    async def get_project_tags(self, project_id: UUID) -> Sequence[ProjectTag]:
+    async def update_project(
+        self,
+        project_update: ProjectUpdate,
+        project_id: UUID,
+        owner_id: UUID,
+    ) -> Project:
+        project = await self.get_project(project_id, owner_id)
+        update_dump = project_update.model_dump(exclude_unset=True)
+        for key, value in update_dump.items():
+            setattr(project, key, value)
+
+        return await self.__project_repository.save(project)
+
+    async def archive_project(self, project_id: UUID, owner_id: UUID) -> Project:
+        project = await self.get_project(project_id, owner_id)
+        project.is_archived = True
+        return await self.__project_repository.save(project)
+
+    async def get_project_tags(
+        self,
+        project_id: UUID,
+        owner_id: UUID,
+    ) -> Sequence[ProjectTag]:
+        await self.get_project(project_id, owner_id)
+
         filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)
         return await self.__project_tag_repository.fetch(
             filters=filters,
@@ -77,7 +101,30 @@ class ProjectService:
             limit=filters.limit,
         )
 
-    async def assign_tag_to_project(self, project_id: UUID, tag_id: UUID) -> ProjectTag:
+    async def assign_tag_to_project(
+        self,
+        project_id: UUID,
+        tag_id: UUID,
+        owner_id: UUID,
+    ) -> ProjectTag:
+        await self.get_project(project_id, owner_id)
+
+        tag = await self.__tag_repository.get(tag_id)
+        if tag is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Tag not found',
+            )
+
+        existing_relation = await self.__project_tag_repository.get_one_by_filters(
+            extra_filters={
+                'project_id': project_id,
+                'tag_id': tag_id,
+            },
+        )
+        if existing_relation is not None:
+            return existing_relation
+
         project_tag = ProjectTag(project_id=project_id, tag_id=tag_id, is_active=True)
         return await self.__project_tag_repository.save(project_tag)
 
@@ -85,7 +132,10 @@ class ProjectService:
         self,
         project_id: UUID,
         tag_id: UUID,
+        owner_id: UUID,
     ) -> ProjectTag:
+        await self.get_project(project_id, owner_id)
+
         filters = ProjectTagFilters(
             project_id=project_id,
             tag_id=tag_id,
@@ -109,7 +159,6 @@ class ProjectService:
 
     async def count_projects(self, filters: ProjectFilters) -> int:
         return await self.__project_repository.count(filters=filters)
-
 
     async def count_project_tags(self, project_id: UUID) -> int:
         filters = ProjectTagFilters(project_id=project_id, offset=0, limit=100)

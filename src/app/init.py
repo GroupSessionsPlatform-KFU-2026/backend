@@ -1,8 +1,7 @@
 import asyncio
 
-from sqlmodel.ext.asyncio.session import AsyncSession
-
 from src.app.db.engine import engine
+from src.app.dependencies.session import async_session_maker
 from src.app.models.permission import Permission
 from src.app.models.role import Role
 from src.app.models.role_permission import RolePermissionLink
@@ -13,7 +12,7 @@ from src.app.utils.repository import Repository
 
 
 async def init_rbac():
-    async with AsyncSession(engine) as session:
+    async with async_session_maker() as session:
         bootstrap_service = RBACBootstrapService(
             permission_repository=Repository[Permission](session),
             role_repository=Repository[Role](session),

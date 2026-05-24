@@ -1,0 +1,75 @@
+---
+- name: Init VM playbook
+  hosts: gsp
+  become: true
+  gather_facts: true
+  vars:
+    test_container_name: hello-container
+
+  tasks:
+    - name: Install Docker
+      register: docker_install_output
+      changed_when: docker_install_output.rc != 0
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -o pipefail
+
+          sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc | cut -f1) -y
+
+          # Add Docker's official GPG key:
+          sudo apt update -y
+          sudo apt install ca-certificates curl -y
+          sudo install -m 0755 -d /etc/apt/keyrings
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+            -o /etc/apt/keyrings/docker.asc
+          sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+          # Add the repository to Apt sources:
+          sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+          Components: stable
+          Architectures: $(dpkg --print-architecture)
+          Signed-By: /etc/apt/keyrings/docker.asc
+          EOF
+
+          sudo apt update -y
+          sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add deployment user to Docker group
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: docker
+        append: true
+      when: deploy_user != 'root'
+
+    - name: Ensure application deployment directory exists
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0755"
+
+    - name: Test docker install
+      community.docker.docker_container:
+        name: "{{ test_container_name }}"
+        image: hello-world
+
+    - name: Clear docker install
+      community.docker.docker_container:
+        name: "{{ test_container_name }}"
+        state: absent
+
+    - name: Install rsync
+      ansible.builtin.command: sudo apt install rsync -y
+      register: rsync_install_output
+      changed_when: rsync_install_output.rc != 0

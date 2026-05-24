@@ -9,6 +9,7 @@ from src.app.dependencies.repositories import (
     RoomParticipantRepositoryDep,
     RoomRepositoryDep,
 )
+from src.app.models.room import RoomStatus
 
 
 class RoomAccessService:
@@ -35,7 +36,18 @@ class RoomAccessService:
             )
 
         if room.creator_id == user_id:
+            if room.status == RoomStatus.ENDED:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail='Room already ended',
+                )
             return 'owner'
+
+        if room.status == RoomStatus.ENDED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='Room already ended',
+            )
 
         participant = await self.__room_participant_repository.get_one_by_filters(
             extra_filters={

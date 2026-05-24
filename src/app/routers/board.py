@@ -4,10 +4,15 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Security
 
 from src.app.core.responses import auth_responses, detail_responses
-from src.app.dependencies.room_access import require_board_element_manage_access
+from src.app.dependencies.room_access import (
+    require_board_element_manage_access,
+    require_room_access,
+    require_room_moderation_access,
+)
 from src.app.dependencies.security import require_scoped_user
 from src.app.dependencies.services import BoardElementServiceDep
 from src.app.models.board_element import (
+    BoardClearResponse,
     BoardElementCreate,
     BoardElementPublic,
     BoardElementUpdate,
@@ -25,7 +30,7 @@ router = APIRouter(
 
 @router.get(
     '/',
-    dependencies=[Security(require_scoped_user, scopes=['board:read'])],
+    dependencies=[Security(require_room_access, scopes=['board:read'])],
     responses=auth_responses,
 )
 async def get_board_elements(
@@ -37,7 +42,7 @@ async def get_board_elements(
     total = await board_service.count_elements(room_id, filters)
 
     return build_paginated_response(
-        items=list(elements),
+        items=board_service.to_public_list(elements),
         total=total,
         offset=filters.offset,
         limit=filters.limit,
@@ -46,6 +51,7 @@ async def get_board_elements(
 
 @router.post(
     '/',
+    dependencies=[Security(require_room_access, scopes=['board:write'])],
     responses=auth_responses,
 )
 async def create_board_element(
@@ -54,7 +60,7 @@ async def create_board_element(
     board_service: BoardElementServiceDep,
     current_user: Annotated[
         UserModel,
-        Security(require_scoped_user, scopes=['board:write']),
+        Security(require_scoped_user, scopes=[]),
     ],
 ) -> BoardElementPublic:
     element_create = element_create.model_copy(
@@ -63,7 +69,8 @@ async def create_board_element(
             'author_id': current_user.id,
         },
     )
-    return await board_service.create_element(room_id, element_create)
+    element = await board_service.create_element(room_id, element_create)
+    return board_service.to_public(element)
 
 
 @router.put(
@@ -90,7 +97,28 @@ async def update_board_element(
     if element is None:
         raise NotFoundError()
 
-    return element
+    return board_service.to_public(element)
+
+
+@router.delete(
+    '/',
+    dependencies=[
+        Security(
+            require_room_moderation_access,
+            scopes=['board:delete'],
+        )
+    ],
+    responses={
+        **auth_responses,
+        **detail_responses,
+    },
+)
+async def clear_board_elements(
+    room_id: UUID,
+    board_service: BoardElementServiceDep,
+) -> BoardClearResponse:
+    deleted_count = await board_service.clear_room_elements(room_id)
+    return BoardClearResponse(room_id=room_id, deleted_count=deleted_count)
 
 
 @router.delete(
@@ -116,4 +144,4 @@ async def delete_board_element(
     if element is None:
         raise NotFoundError()
 
-    return element
+    return board_service.to_public(element)

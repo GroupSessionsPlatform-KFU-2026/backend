@@ -4,6 +4,7 @@ from uuid import UUID
 from src.app.models.board_element_comment import (
     BoardElementComment,
     BoardElementCommentCreate,
+    BoardElementCommentPublic,
     BoardElementCommentUpdate,
 )
 from src.app.services.board_elements_comments import BoardElementCommentService
@@ -69,10 +70,12 @@ class BoardCommentSocketEventHandler(
             'content',
             BoardCommentSocketError,
         )
+        is_anonymous = bool(payload.get('is_anonymous', False))
         return BoardElementCommentCreate(
             board_element_id=element_id,
             author_id=identity.user_id,
             content=content,
+            is_anonymous=is_anonymous,
         )
 
     def _parse_update_payload(
@@ -94,12 +97,15 @@ class BoardCommentSocketEventHandler(
             'content',
             BoardCommentSocketError,
         )
+        update_data: dict[str, Any] = {'content': content}
+        if 'is_anonymous' in payload:
+            update_data['is_anonymous'] = bool(payload['is_anonymous'])
         return (
             {
                 'element_id': element_id,
                 'comment_id': comment_id,
             },
-            BoardElementCommentUpdate(content=content),
+            BoardElementCommentUpdate(**update_data),
         )
 
     def _parse_delete_payload(
@@ -126,12 +132,13 @@ class BoardCommentSocketEventHandler(
         service: BoardElementCommentService,
         identity: SocketIdentity,
         payload: BoardElementCommentCreate,
-    ) -> BoardElementComment | None:
-        return await service.create_comment(
+    ) -> BoardElementCommentPublic | None:
+        comment = await service.create_comment(
             room_id=identity.room_id,
             element_id=payload.board_element_id,
             comment_create=payload,
         )
+        return service.to_public(comment)
 
     async def _get_existing_resource(
         self,
@@ -151,13 +158,14 @@ class BoardCommentSocketEventHandler(
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
         payload: BoardElementCommentUpdate,
-    ) -> BoardElementComment | None:
-        return await service.update_comment(
+    ) -> BoardElementCommentPublic | None:
+        comment = await service.update_comment(
             room_id=identity.room_id,
             element_id=resource_ids['element_id'],
             comment_id=resource_ids['comment_id'],
             comment_update=payload,
         )
+        return service.to_public(comment)
 
     async def _delete_resource(
         self,

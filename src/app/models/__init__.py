@@ -1,5 +1,6 @@
 from .base import BaseModel
 from .board_element import (
+    BoardClearResponse,
     BoardElement,
     BoardElementBase,
     BoardElementCreate,
@@ -19,6 +20,7 @@ from .chat_message import (
     ChatMessageCreate,
     ChatMessagePublic,
     ChatMessageUpdate,
+    ChatMessageWithSender,
 )
 from .email import (
     EmailAction,
@@ -89,6 +91,7 @@ from .user_role import UserRoleLink
 
 __all__ = [
     'BaseModel',
+    'BoardClearResponse',
     'BoardElement',
     'BoardElementBase',
     'BoardElementCreate',
@@ -104,6 +107,7 @@ __all__ = [
     'ChatMessageCreate',
     'ChatMessagePublic',
     'ChatMessageUpdate',
+    'ChatMessageWithSender',
     'PomodoroSession',
     'PomodoroSessionBase',
     'PomodoroSessionCreate',

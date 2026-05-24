@@ -26,6 +26,7 @@ def generate_room_code(length: int = 6) -> str:
     alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
+
 def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
     defaults = settings.pomodoro
 
@@ -41,6 +42,7 @@ def build_default_pomodoro_session(room_id: UUID) -> PomodoroSession:
         phase_ends_at=None,
         session_ends_at=None,
     )
+
 
 class RoomService:
     __room_repository: RoomRepository
@@ -63,6 +65,9 @@ class RoomService:
             offset=filters.offset,
             limit=filters.limit,
         )
+
+    async def count_rooms(self, filters: RoomFilters) -> int:
+        return await self.__room_repository.count(filters=filters)
 
     async def create_room(self, room_create: RoomCreate, creator_id: UUID) -> Room:
         room_dump = room_create.model_dump(exclude={'creator_id'})
@@ -113,6 +118,12 @@ class RoomService:
                 detail='Only room creator can update room',
             )
 
+        if room.status == RoomStatus.ENDED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='Cannot update an ended room',
+            )
+
         update_dump = room_update.model_dump(exclude_unset=True)
         for key, value in update_dump.items():
             setattr(room, key, value)
@@ -132,6 +143,12 @@ class RoomService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='Only room creator can end room',
+            )
+
+        if room.status == RoomStatus.ENDED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='Room already ended',
             )
 
         room.status = RoomStatus.ENDED

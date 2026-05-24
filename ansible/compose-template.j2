@@ -1,5 +1,5 @@
-x-back-image: &back-image xludw1ng/studiom-backend:latest
-x-front-image: &front-image nginx:latest
+x-back-image: &back-image {{ back_image }}
+x-front-image: &front-image {{ front_image }}
 
 x-back-env: &back-env
   env_file:
@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB__PASSWORD}
       POSTGRES_DB: ${DB__NAME}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB__USER} -d ${DB__NAME}"]
       interval: 10s
@@ -74,7 +74,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/html:/var/www/html:ro
+      - ./html:/var/www/html:ro
     restart: unless-stopped
 
 volumes:

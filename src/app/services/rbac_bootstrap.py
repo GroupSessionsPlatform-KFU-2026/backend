@@ -62,6 +62,7 @@ class RBACBootstrapService:
         admin_user = await self.__ensure_admin_user()
         await self.__assign_role_to_user(admin_user.id, admin_role.id)
         print('RBAC bootstrap finished')
+
     async def __ensure_permissions(self) -> dict[str, UUID]:
         existing_permissions = await self.__permission_repository.fetch(limit=1000)
         permissions_by_scope: dict[str, UUID] = {
@@ -131,6 +132,9 @@ class RBACBootstrapService:
             filters=UserFilters(email=settings.rbac.admin_email),
         )
         if existing_admin is not None:
+            if not existing_admin.is_verified:
+                existing_admin.is_verified = True
+                return await self.__user_repository.save(existing_admin)
             return existing_admin
 
         admin_user = User(
@@ -139,6 +143,7 @@ class RBACBootstrapService:
             avatar_url=None,
             password_hash=get_password_hash(settings.rbac.admin_password),
             is_active=True,
+            is_verified=True,
         )
         return await self.__user_repository.save(admin_user)
 
@@ -154,4 +159,3 @@ class RBACBootstrapService:
 
         link = UserRoleLink(user_id=user_id, role_id=role_id)
         await self.__user_role_repository.save(link)
-

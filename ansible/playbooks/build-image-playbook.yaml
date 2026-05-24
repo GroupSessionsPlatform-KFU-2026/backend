@@ -1,0 +1,51 @@
+- name: Build image playbook
+  hosts: gsp
+  become: true
+  vars:
+    image_name: xludw1ng/studiom-backend
+    image_tag: v1.0.0-test-gsp
+    image_build_dir: "{{ app_dir }}/build/src"
+    docker_pass: "{{ lookup('env', 'DOCKER_PASS') }}"
+  tasks:
+    - name: Remove previous temporary source code
+      ansible.builtin.file:
+        path: "{{ image_build_dir }}"
+        state: absent
+
+    - name: Ensure build directory exists
+      ansible.builtin.file:
+        path: "{{ image_build_dir | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy source code
+      ansible.posix.synchronize:
+        src: ../../src/
+        dest: "{{ image_build_dir }}/"
+        delete: true
+        rsync_opts:
+          - "--exclude=.env"
+
+    - name: Build image
+      community.docker.docker_image_build:
+        name: "{{ image_name }}"
+        tag: "{{ image_tag }}"
+        path: "{{ image_build_dir }}"
+
+    - name: Remove temporary build folder
+      ansible.builtin.file:
+        path: "{{ image_build_dir | dirname }}"
+        state: absent
+
+    - name: Login to registry
+      community.docker.docker_login:
+        username: xludw1ng
+        password: "{{ docker_pass }}"
+        reauthorize: true
+
+    - name: Push image
+      community.docker.docker_image_push:
+        name: "{{ image_name }}"
+        tag: "{{ image_tag }}"

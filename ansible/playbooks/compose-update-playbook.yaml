@@ -1,0 +1,71 @@
+- name: Build image playbook
+  hosts: gsp
+  become: true
+  vars:
+    back_image: xludw1ng/studiom-backend:v1.0.0-test-gsp
+    front_image: nginx:latest
+    env_path: "{{ lookup('env', 'ENV', default='../../src/.env') }}"
+    compose_path: ./compose.yaml
+  tasks:
+    - name: Copy .env
+      ansible.builtin.copy:
+        src: "{{ env_path }}"
+        dest: ./.env
+        mode: preserve
+
+    - name: Copy nginx config
+      ansible.builtin.copy:
+        src: ../../src/nginx/
+        dest: ./nginx
+        mode: preserve
+
+    - name: Copy html folder
+      ansible.builtin.copy:
+        src: ../../src/html/
+        dest: ./html
+        mode: preserve
+
+    - name: Check if compose present
+      ansible.builtin.stat:
+        path: "{{ compose_path }}"
+      register: file_data
+
+    - name: Stop running containers
+      community.docker.docker_compose_v2:
+        project_src: .
+        state: absent
+        remove_orphans: true
+      when: file_data.stat.exists
+
+    - name: Read compose file
+      ansible.builtin.slurp:
+        src: "{{ compose_path }}"
+      register: yaml_data
+      when: file_data.stat.exists
+
+    - name: Parse the data
+      ansible.builtin.set_fact:
+        compose_data: "{{ yaml_data.content | b64decode | from_yaml }}"
+      when: file_data.stat.exists
+
+    - name: Extract frontend image
+      ansible.builtin.set_fact:
+        front_image: "{{ compose_data['x-front-image'] }}"
+      when: file_data.stat.exists
+
+    - name: Template a docker-compose
+      ansible.builtin.template:
+        src: ../compose-template.j2
+        dest: "{{ compose_path }}"
+        mode: preserve
+
+    - name: Start compose
+      community.docker.docker_compose_v2:
+        project_src: .
+        state: present
+
+    - name: Prune all unused images
+      community.docker.docker_prune:
+        images: true
+        images_filters:
+          dangling: false

@@ -5,6 +5,7 @@ from src.app.models.chat_message import (
     ChatMessage,
     ChatMessageCreate,
     ChatMessageUpdate,
+    ChatMessageWithSender,
 )
 from src.app.services.chat_messages import ChatMessageService
 from src.app.sockets.events.base_room_crud import BaseRoomCrudSocketHandler
@@ -98,11 +99,12 @@ class ChatSocketEventHandler(
         service: ChatMessageService,
         identity: SocketIdentity,
         payload: ChatMessageCreate,
-    ) -> ChatMessage | None:
-        return await service.create_message(
+    ) -> ChatMessageWithSender | None:
+        message = await service.create_message(
             room_id=identity.room_id,
             message_create=payload,
         )
+        return await service.to_public(message)
 
     async def _get_existing_resource(
         self,
@@ -121,12 +123,13 @@ class ChatSocketEventHandler(
         identity: SocketIdentity,
         resource_ids: dict[str, UUID],
         payload: ChatMessageUpdate,
-    ) -> ChatMessage | None:
-        return await service.update_message(
+    ) -> ChatMessageWithSender | None:
+        message = await service.update_message(
             room_id=identity.room_id,
             message_id=resource_ids['message_id'],
             message_update=payload,
         )
+        return await service.to_public(message)
 
     async def _delete_resource(
         self,

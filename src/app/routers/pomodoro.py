@@ -3,8 +3,10 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from src.app.core.responses import auth_responses, detail_responses
-from src.app.dependencies.room_access import require_pomodoro_moderation_access
-from src.app.dependencies.security import require_scoped_user
+from src.app.dependencies.room_access import (
+    require_pomodoro_moderation_access,
+    require_room_access,
+)
 from src.app.dependencies.services import PomodoroSessionServiceDep
 from src.app.models.pomodoro_session import (
     PomodoroSessionPublic,
@@ -20,7 +22,7 @@ router = APIRouter(
 
 @router.get(
     '/',
-    dependencies=[Security(require_scoped_user, scopes=['pomodoro:read'])],
+    dependencies=[Security(require_room_access, scopes=['pomodoro:read'])],
     responses={
         **auth_responses,
         **detail_responses,
