@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "lts/*"
 
@@ -39,7 +39,7 @@ jobs:
     needs: release
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup python
         uses: actions/setup-python@v5
@@ -75,7 +75,7 @@ jobs:
           ansible-playbook \
             -i inventory.ini \
             -u ${{ secrets.VM_USER }} \
-          --private-key ~/.ssh/host-group-session-platform \
+            --private-key ~/.ssh/host-group-session-platform \
             playbooks/test-playbook.yaml
         env:
           ANSIBLE_FORCE_COLOR: "true"
