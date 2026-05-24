@@ -100,4 +100,4 @@ jobs:
           ANSIBLE_FORCE_COLOR: "true"
           ANSIBLE_HOST_KEY_CHECKING: "false"
           ENV: ~/.env
-          DOCKER_IMAGE_WITH_TAG: ${{ vars.DOCKER_USER }}/${{ vars.DOCKER_IMAGE_NAME}}:-gsp-tag
+          DOCKER_IMAGE_WITH_TAG: ${{ vars.DOCKER_USER }}/${{ vars.DOCKER_IMAGE_NAME}}:${{ needs.release.outputs.new_release_version }}-gsp-tag
