@@ -75,6 +75,7 @@ jobs:
           ansible-playbook \
             -i inventory.ini \
             -u ${{ secrets.VM_USER }} \
+          --private-key ~/.ssh/host-group-session-platform \
             playbooks/test-playbook.yaml
         env:
           ANSIBLE_FORCE_COLOR: "true"
