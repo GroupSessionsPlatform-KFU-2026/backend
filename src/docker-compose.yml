@@ -113,4 +113,3 @@ volumes:
   proxy_data:
   certificates:
   proxy_postgres_data:
-
