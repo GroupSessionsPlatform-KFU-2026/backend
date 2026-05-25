@@ -1,6 +1,6 @@
 {
   "release": {
-    "branches": ["main","ci-cd-branch"],
+    "branches": ["main"],
     "tagFormat": "v${version}-gsp-tag",
     "plugins": [
       "@semantic-release/commit-analyzer",
