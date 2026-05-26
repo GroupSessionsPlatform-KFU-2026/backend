@@ -1,0 +1,115 @@
+x-back-image: &back-image xludw1ng/studiom-backend:v1.0.0-test-gsp
+x-front-image: &front-image nginx:latest
+
+x-back-env: &back-env
+  env_file:
+    - .env
+  environment:
+    DB__HOST: postgres
+    DB__PORT: "5432"
+
+x-back-common: &back-common
+  <<: *back-env
+  image: *back-image
+
+x-db-base: &db-base
+  image: postgres:18
+  restart: always
+  env_file:
+    - .env
+  healthcheck:
+    test: [ "CMD-SHELL", "pg_isready -U ${DB__USER} -d ${DB__NAME}" ]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+    start_period: 10s
+
+services:
+  postgres:
+    <<: *db-base
+    environment:
+      POSTGRES_USER: ${DB__USER}
+      POSTGRES_PASSWORD: ${DB__PASSWORD}
+      POSTGRES_DB: ${DB__NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  migrations:
+    <<: *back-common
+    command: alembic upgrade head
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  rbac:
+    <<: *back-common
+    command: python -m src.app.init
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  api:
+    <<: *back-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+      rbac:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: *front-image
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./html:/var/www/html:ro
+    restart: unless-stopped
+
+  proxy_db:
+    <<: *db-base
+    environment:
+      POSTGRES_USER: ${DB__USER}
+      POSTGRES_PASSWORD: ${DB__PASSWORD}
+      POSTGRES_DB: proxy
+    volumes:
+      - proxy_postgres_data:/var/lib/postgresql
+
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    restart: always
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    environment:
+        TZ: 'Russia/Moscow'
+        DB_POSTGRES_HOST: "proxy_db"
+        DB_POSTGRES_PORT: '5432'
+        DB_POSTGRES_USER: ${DB__USER}
+        DB_POSTGRES_PASSWORD: ${DB__PASSWORD}
+        DB_POSTGRES_NAME: proxy
+        INITIAL_ADMIN_EMAIL: ${PROXY__ADMIN_EMAIL}
+        INITIAL_ADMIN_PASSWORD: ${PROXY__ADMIN_PASSWORD}
+    volumes:
+      - proxy_data:/data
+      - certificates:/etc/letsencrypt
+
+volumes:
+  postgres_data:
+  proxy_data:
+  certificates:
+  proxy_postgres_data:

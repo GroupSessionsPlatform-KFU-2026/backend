@@ -1,0 +1,84 @@
+name: Release app workflow
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_version: ${{ steps.semantic_release.outputs.new_release_version }}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+
+      - name: Run semantic-release
+        id: semantic_release
+        uses: cycjimmy/semantic-release-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.new_release_version != ''
+    steps:
+      - uses: GroupSessionsPlatform-KFU-2026/backend/.github/actions/ansible-setup@main
+        with:
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          vm_host: ${{ secrets.VM_HOST }}
+
+      - name: Run playbook
+        run: |
+          cd ansible
+          ansible-playbook \
+            -i inventory.ini \
+            -u ${{ secrets.VM_USER }} \
+            --private-key ~/.ssh/host-group-session-platform \
+            playbooks/build-image-playbook.yaml
+        env:
+          ANSIBLE_FORCE_COLOR: "true"
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+          DOCKER_USER: ${{ vars.DOCKER_USER }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+          CI_COMMIT_TAG: ${{ needs.release.outputs.new_release_version }}-gsp-tag
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV }}" > ~/.env
+
+      - name: Update a compose
+        run: |
+          cd ansible
+          ansible-playbook \
+            -i inventory.ini \
+            -u ${{ secrets.VM_USER }} \
+            --private-key ~/.ssh/host-group-session-platform \
+            playbooks/compose-update-playbook.yaml
+        env:
+          ANSIBLE_FORCE_COLOR: "true"
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+          ENV: ~/.env
+          DOCKER_IMAGE_WITH_TAG: ${{ vars.DOCKER_USER }}/${{ vars.DOCKER_IMAGE_NAME}}:${{ needs.release.outputs.new_release_version }}-gsp-tag
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf ~/.ssh/
+          rm -rf ~/.env
