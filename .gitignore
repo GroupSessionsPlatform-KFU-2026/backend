@@ -181,5 +181,4 @@ postgres/
 # End of https://www.toptal.com/developers/gitignore/api/python
 *.zip
 
-inventory.init
-.ansiblesecrets.txt
+inventory.ini

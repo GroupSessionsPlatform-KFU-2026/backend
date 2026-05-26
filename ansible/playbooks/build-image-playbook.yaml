@@ -37,11 +37,6 @@
         tag: "{{ image_tag }}"
         path: "{{ image_build_dir }}"
 
-    - name: Remove temporary build folder
-      ansible.builtin.file:
-        path: "{{ image_build_dir | dirname }}"
-        state: absent
-
     - name: Login to registry
       community.docker.docker_login:
         username: "{{ docker_user }}"
