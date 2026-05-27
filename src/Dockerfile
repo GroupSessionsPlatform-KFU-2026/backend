@@ -28,7 +28,10 @@ COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app"
 
-COPY . .
+COPY __init__.py ./src/__init__.py
+COPY app ./src/app
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
 
 RUN chown -R appuser:appuser /app
 

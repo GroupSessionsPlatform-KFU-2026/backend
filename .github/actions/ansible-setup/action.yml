@@ -1,0 +1,51 @@
+name: Setup ansible
+
+
+description: Setup ansible for VM
+
+inputs:
+  ssh_private_key:
+    description: 'SSH private key'
+    required: true
+  known_hosts:
+    description: 'SSH known hosts'
+    required: true
+  vm_host:
+    description: 'VM host'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Setup python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13.12'
+
+    - name: Install Ansible
+      shell: bash
+      run: pipx install --include-deps Ansible
+
+    - name: Install Ansible collections
+      shell: bash
+      run: ansible-galaxy collection install -r requirements.yml
+
+    - name: Setup SSH
+      shell: bash
+      run: |
+        eval  `ssh-agent -s`
+        mkdir -p ~/.ssh/
+        touch ~/.ssh/host-group-session-platform
+        echo -e "${{ inputs.ssh_private_key }}" | base64 -d | tr -d '\r' > ~/.ssh/host-group-session-platform
+        chmod 700 ~/.ssh/host-group-session-platform
+        echo -e "${{ inputs.known_hosts }}" > ~/.ssh/known_hosts
+
+    - name: Create inventory
+      shell: bash
+      run: |
+        cat > ansible/inventory.ini << EOF
+        [gsp]
+        ${{ inputs.vm_host }}
+        EOF

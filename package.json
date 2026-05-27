@@ -1,0 +1,11 @@
+{
+  "release": {
+    "branches": ["main"],
+    "tagFormat": "v${version}-gsp-tag",
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ]
+  }
+}
