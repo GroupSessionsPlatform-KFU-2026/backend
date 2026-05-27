@@ -6,6 +6,7 @@ from socketio.exceptions import ConnectionRefusedError as SocketConnectionRefuse
 from src.app.models.permission import Permission
 from src.app.models.role import Role
 from src.app.models.room import Room, RoomStatus
+from src.app.models.room_participant import RoomParticipant
 from src.app.models.user import User
 from src.app.sockets import auth as socket_auth
 from src.app.sockets import server
@@ -54,6 +55,58 @@ class FakeSocketServer:
             return callback
 
         return decorator
+
+
+def install_socket_auth_fakes(
+    monkeypatch,
+    *,
+    users_by_token: dict[str, User],
+    room_repository,
+    participant_repository,
+) -> None:
+    @asynccontextmanager
+    async def fake_session_maker():
+        yield object()
+
+    class FakeAuthService:
+        def __init__(self, **kwargs) -> None:
+            _ = kwargs
+
+        async def get_current_user(self, token: str, required_scopes: list[str]):
+            assert required_scopes == ['rooms:read']
+            if token not in users_by_token:
+                raise SocketTestError('bad token')
+            return users_by_token[token]
+
+    class FakeRepository:
+        def __class_getitem__(cls, model):
+            def build(_session):
+                if model is Room:
+                    return room_repository
+                if model.__name__ == 'RoomParticipant':
+                    return participant_repository
+                return object()
+
+            return build
+
+    monkeypatch.setattr(socket_auth, 'async_session_maker', fake_session_maker)
+    monkeypatch.setattr(socket_auth, 'AuthService', FakeAuthService)
+    monkeypatch.setattr(socket_auth, 'Repository', FakeRepository)
+
+    def build_user_repository(_session):
+        return object()
+
+    def build_user_service(*, user_repository):
+        _ = user_repository
+        return object()
+
+    def build_email_service(*, background_tasks):
+        _ = background_tasks
+        return object()
+
+    monkeypatch.setattr(socket_auth, 'UserRepository', build_user_repository)
+    monkeypatch.setattr(socket_auth, 'UserService', build_user_service)
+    monkeypatch.setattr(socket_auth, 'EmailService', build_email_service)
 
 
 async def test_socket_connection_manager_tracks_presence_and_emits():
@@ -285,6 +338,163 @@ def test_socket_auth_extractors_and_scope_collection():
         socket_auth._extract_room_id({})
     with pytest.raises(SocketConnectionRefusedError, match='Invalid room id'):
         socket_auth._extract_room_id({'room_id': 'broken'})
+
+
+async def test_socket_auth_connection_accepts_owner_and_participant(monkeypatch):
+    room_id = uuid4()
+    owner_id = uuid4()
+    participant_id = uuid4()
+    permission = Permission(subject='rooms', action='read')
+    role = Role(name='public')
+    role.permissions = [permission]
+    owner = User(
+        id=owner_id,
+        email='socket-owner@example.com',
+        username='socket-owner',
+        avatar_url=None,
+        password_hash='hash',
+        is_active=True,
+        is_verified=True,
+    )
+    owner.roles = [role]
+    participant = owner.model_copy(
+        update={
+            'id': participant_id,
+            'email': 'socket-participant@example.com',
+            'username': 'socket-participant',
+        }
+    )
+    participant.roles = [role]
+    room = Room(
+        id=room_id,
+        title='Socket auth room',
+        max_participants=5,
+        project_id=uuid4(),
+        creator_id=owner_id,
+        room_code='ABC123',
+        status=RoomStatus.ACTIVE,
+        ended_at=None,
+    )
+
+    class RoomRepository:
+        async def get(self, requested_room_id):
+            assert requested_room_id == room_id
+            return room
+
+    class ParticipantRepository:
+        async def fetch(self, extra_filters):
+            if extra_filters['user_id'] == participant_id:
+                return [
+                    RoomParticipant(
+                        room_id=room_id,
+                        user_id=participant_id,
+                        role='moderator',
+                        joined_at=None,
+                        left_at=None,
+                        is_kicked=False,
+                    )
+                ]
+            return []
+
+    install_socket_auth_fakes(
+        monkeypatch,
+        users_by_token={
+            'owner-token': owner,
+            'participant-token': participant,
+        },
+        room_repository=RoomRepository(),
+        participant_repository=ParticipantRepository(),
+    )
+
+    owner_context = await socket_auth.authenticate_socket_connection(
+        {
+            'access_token': 'owner-token',
+            'room_id': str(room_id),
+        }
+    )
+    participant_context = await socket_auth.authenticate_socket_connection(
+        {
+            'access_token': 'participant-token',
+            'room_id': str(room_id),
+        }
+    )
+
+    assert owner_context.role == 'owner'
+    assert owner_context.scopes == ['rooms:read']
+    assert participant_context.role == 'moderator'
+
+
+async def test_socket_auth_connection_rejects_invalid_room_states(monkeypatch):
+    room_id = uuid4()
+    user = User(
+        email='socket-denied@example.com',
+        username='socket-denied',
+        avatar_url=None,
+        password_hash='hash',
+        is_active=True,
+        is_verified=True,
+    )
+    user.roles = []
+
+    class RoomRepository:
+        def __init__(self, room: Room | None) -> None:
+            self.room = room
+
+        async def get(self, requested_room_id):
+            assert requested_room_id == room_id
+            return self.room
+
+    class EmptyParticipantRepository:
+        async def fetch(self, extra_filters):
+            _ = extra_filters
+            return []
+
+    ended_room = Room(
+        id=room_id,
+        title='Ended socket auth room',
+        max_participants=5,
+        project_id=uuid4(),
+        creator_id=uuid4(),
+        room_code='ABC123',
+        status=RoomStatus.ENDED,
+        ended_at=None,
+    )
+    active_room = ended_room.model_copy(update={'status': RoomStatus.ACTIVE})
+
+    socket_auth_cases = {
+        'Invalid access token': {
+            'tokens': {},
+            'room_repository': RoomRepository(active_room),
+        },
+        'Room not found': {
+            'tokens': {'token': user},
+            'room_repository': RoomRepository(None),
+        },
+        'Room already ended': {
+            'tokens': {'token': user},
+            'room_repository': RoomRepository(ended_room),
+        },
+        'User has no access to this room': {
+            'tokens': {'token': user},
+            'room_repository': RoomRepository(active_room),
+        },
+    }
+
+    for expected_message, case in socket_auth_cases.items():
+        install_socket_auth_fakes(
+            monkeypatch,
+            users_by_token=case['tokens'],
+            room_repository=case['room_repository'],
+            participant_repository=EmptyParticipantRepository(),
+        )
+
+        with pytest.raises(SocketConnectionRefusedError, match=expected_message):
+            await socket_auth.authenticate_socket_connection(
+                {
+                    'access_token': 'token',
+                    'room_id': str(room_id),
+                }
+            )
 
 
 async def test_socket_server_connect_and_disconnect(monkeypatch):
