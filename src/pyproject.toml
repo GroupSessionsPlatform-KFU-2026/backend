@@ -29,7 +29,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "coverage>=7.14.0",
+    "httpx>=0.28.1",
     "pre-commit>=4.5.1",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "pytest-subtests>=0.15.0",
     "ruff>=0.15.4",
 ]
 
@@ -59,9 +65,34 @@ select = [
     "W"
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"app/services/auth.py" = ["PLR0913"]
+"tests/test_api_resources.py" = ["PLR0915"]
+"tests/test_domain_services.py" = ["PLR0915"]
+"tests/test_services_and_permissions.py" = ["SLF001"]
+"tests/test_socket_helpers.py" = ["C901", "SLF001"]
+"tests/test_socket_pomodoro_events.py" = ["SLF001"]
+
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
 docstring-code-format = false
 docstring-code-line-length = "dynamic"
 skip-magic-trailing-comma = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [".."]
+testpaths = ["tests"]
+disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
+markers = [
+    "smoke: critical path tests that should pass before running a full build",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true

@@ -52,6 +52,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+pytest.xml
+pytest-coverage.txt
 *.cover
 *.py,cover
 .hypothesis/
@@ -177,6 +179,7 @@ poetry.toml
 pyrightconfig.json
 
 postgres/
+/nginx/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 *.zip

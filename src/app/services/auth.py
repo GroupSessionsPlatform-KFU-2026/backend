@@ -34,6 +34,12 @@ from src.app.services.users import UserService
 from src.app.utils.hashing import get_password_hash
 
 
+def _ensure_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 class AuthService:
     __user_repository: UserRepository
     __refresh_session_repository: RefreshSessionRepository
@@ -42,7 +48,7 @@ class AuthService:
     __email_notification_repository: EmailNotificationRepository
     __user_service: UserService
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         user_repository: UserRepositoryDep,
         refresh_session_repository: RefreshSessionRepositoryDep,
@@ -272,7 +278,7 @@ class AuthService:
                 detail='Refresh session is invalid',
             )
 
-        if refresh_session.expires_at <= datetime.now(timezone.utc):
+        if _ensure_aware_utc(refresh_session.expires_at) <= datetime.now(timezone.utc):
             refresh_session.is_revoked = True
             await self.__refresh_session_repository.save(refresh_session)
 
@@ -521,7 +527,7 @@ class AuthService:
                 detail='Email notification already used',
             )
 
-        if notification.expired_at <= datetime.now(timezone.utc):
+        if _ensure_aware_utc(notification.expired_at) <= datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Email notification expired',
