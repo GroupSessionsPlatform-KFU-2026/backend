@@ -21,7 +21,7 @@ from src.app.models.user_role import UserRoleLink
 from src.app.services.email import EmailService
 from src.app.utils.hashing import get_password_hash
 from src.test_db_init import drop_test_db, init_test_db
-from src.tests.utils import build_auth_context
+from src.tests.utils import AuthContext, register_verified_user
 
 import_module('src.app.models')
 
@@ -33,7 +33,7 @@ class FakeEmailService:
 
 @pytest_asyncio.fixture
 async def async_db_engine(tmp_path: Path) -> AsyncGenerator[AsyncEngine]:
-    database_url = form_test_db_url(str(tmp_path / 'test.db'))
+    database_url = form_test_db_url(str(tmp_path / 'db.sqlite3'))
     db_engine = create_async_engine(
         database_url,
         connect_args={'check_same_thread': False},
@@ -123,19 +123,23 @@ async def public_auth(
     session_maker,
     user_payload: dict[str, str],
 ):
-    auth_context = await build_auth_context(async_client, session_maker, user_payload)
-    auth_context['scopes'] = set(INITIAL_ROLE_SCOPES[settings.rbac.public_role])
+    auth_context = await register_verified_user(
+        async_client,
+        session_maker,
+        user_payload,
+    )
+    auth_context.scopes = set(INITIAL_ROLE_SCOPES[settings.rbac.public_role])
     return auth_context
 
 
 @pytest.fixture
 def public_access_token(public_auth) -> str:
-    return public_auth['tokens']['access_token']
+    return public_auth.tokens['access_token']
 
 
 @pytest.fixture
 def public_scopes(public_auth) -> set[str]:
-    return public_auth['scopes']
+    return public_auth.scopes
 
 
 @pytest.fixture
@@ -181,23 +185,23 @@ async def admin_auth(client: AsyncClient, session_maker):
     )
     token_data = login_response.json()
 
-    return {
-        'user': admin_user,
-        'payload': payload,
-        'tokens': token_data,
-        'headers': {'Authorization': f'Bearer {token_data["access_token"]}'},
-        'scopes': set(PERMISSION_DESCRIPTIONS),
-    }
+    return AuthContext(
+        user=admin_user,
+        payload=payload,
+        tokens=token_data,
+        headers={'Authorization': f'Bearer {token_data["access_token"]}'},
+        scopes=set(PERMISSION_DESCRIPTIONS),
+    )
 
 
 @pytest.fixture
 def admin_access_token(admin_auth) -> str:
-    return admin_auth['tokens']['access_token']
+    return admin_auth.tokens['access_token']
 
 
 @pytest.fixture
 def admin_scopes(admin_auth) -> set[str]:
-    return admin_auth['scopes']
+    return admin_auth.scopes
 
 
 @pytest.fixture

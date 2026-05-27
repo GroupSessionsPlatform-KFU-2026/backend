@@ -5,9 +5,9 @@ from fastapi import status
 from httpx import AsyncClient
 from src.app.models.email import EmailAction
 from src.tests.utils import (
+    get_email_notification,
+    get_user_by_email,
     login_user,
-    read_email_notification,
-    read_user_by_email,
     register_user,
     verify_user,
 )
@@ -103,7 +103,7 @@ async def test_verify_account_rejects_unknown_notification(
 
     assert response.status_code == status.HTTP_201_CREATED
 
-    user = await read_user_by_email(session_maker, user_payload['email'])
+    user = await get_user_by_email(session_maker, user_payload['email'])
     verify_response = await client.get(
         f'/api/v1/auth/user/{user.id}/verify',
         params={'code': str(uuid4())},
@@ -120,8 +120,8 @@ async def test_verify_account_rejects_reused_notification(
     response = await register_user(client, user_payload)
     assert response.status_code == status.HTTP_201_CREATED
 
-    user = await read_user_by_email(session_maker, user_payload['email'])
-    notification = await read_email_notification(session_maker, user.id)
+    user = await get_user_by_email(session_maker, user_payload['email'])
+    notification = await get_email_notification(session_maker, user.id)
     verify_response = await client.get(
         f'/api/v1/auth/user/{user.id}/verify',
         params={'code': str(notification.code)},
@@ -204,7 +204,7 @@ async def test_password_reset_changes_password_and_revokes_sessions(
 
     assert send_code_response.status_code == status.HTTP_200_OK
 
-    notification = await read_email_notification(
+    notification = await get_email_notification(
         session_maker,
         user.id,
         EmailAction.CHANGE_PASSWORD,
@@ -250,7 +250,7 @@ async def test_password_reset_rejects_mismatched_passwords(
     )
     assert send_code_response.status_code == status.HTTP_200_OK
 
-    notification = await read_email_notification(
+    notification = await get_email_notification(
         session_maker,
         user.id,
         EmailAction.CHANGE_PASSWORD,

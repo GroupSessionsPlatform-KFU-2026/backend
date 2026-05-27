@@ -32,11 +32,81 @@ from src.app.services.room_participants import RoomParticipantService
 from src.app.services.rooms import RoomService
 from src.app.services.users import UserService
 from src.app.utils.hashing import get_password_hash
-from src.tests.test_domain_services import InMemoryRepository
 
 pytestmark = pytest.mark.asyncio
 
 ROOM_MAX_PARTICIPANTS = 2
+
+
+class InMemoryRepository:
+    def __init__(self, items: list[Any] | None = None) -> None:
+        self.items = items or []
+
+    async def get(self, pk: UUID):
+        return next((item for item in self.items if item.id == pk), None)
+
+    async def fetch(
+        self,
+        filters=None,
+        offset: int | None = None,
+        limit: int | None = None,
+        extra_filters: dict[str, Any] | None = None,
+    ):
+        filters_dict = {}
+        if filters is not None:
+            filters_dict.update(filters.model_dump(exclude_unset=True))
+        if extra_filters is not None:
+            filters_dict.update(extra_filters)
+
+        for key in ('offset', 'limit'):
+            filters_dict.pop(key, None)
+
+        items = [
+            item
+            for item in self.items
+            if all(getattr(item, key) == value for key, value in filters_dict.items())
+        ]
+
+        if offset is not None:
+            items = items[offset:]
+        if limit is not None:
+            items = items[:limit]
+        return items
+
+    async def get_one_by_filters(self, filters=None, extra_filters=None):
+        items = await self.fetch(filters=filters, limit=1, extra_filters=extra_filters)
+        return items[0] if items else None
+
+    async def count(self, filters=None, extra_filters=None) -> int:
+        return len(await self.fetch(filters=filters, extra_filters=extra_filters))
+
+    async def save(self, instance):
+        existing_index = next(
+            (index for index, item in enumerate(self.items) if item.id == instance.id),
+            None,
+        )
+        if existing_index is None:
+            self.items.append(instance)
+        else:
+            self.items[existing_index] = instance
+        return instance
+
+    async def update(self, pk: UUID, updates):
+        instance = await self.get(pk)
+        if instance is None:
+            return None
+
+        for key, value in updates.model_dump(exclude_unset=True).items():
+            setattr(instance, key, value)
+        return instance
+
+    async def delete(self, pk: UUID):
+        instance = await self.get(pk)
+        if instance is None:
+            return None
+
+        self.items = [item for item in self.items if item.id != pk]
+        return instance
 
 
 class AuthUserRepository(InMemoryRepository):

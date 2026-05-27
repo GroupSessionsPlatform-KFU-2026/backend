@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
@@ -42,4 +43,5 @@ async def init_local_test_db(db_path: str = 'db.sqlite3') -> None:
 
 
 if __name__ == '__main__':
-    asyncio.run(init_local_test_db())
+    database_path = sys.argv[1] if len(sys.argv) > 1 else 'db.sqlite3'
+    asyncio.run(init_local_test_db(database_path))

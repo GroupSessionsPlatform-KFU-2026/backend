@@ -4,7 +4,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from src.app.core.settings import settings
-from src.tests.utils import build_auth_context
+from src.tests.utils import register_verified_user
 
 pytestmark = pytest.mark.asyncio
 
@@ -84,11 +84,11 @@ async def test_public_user_cannot_access_admin_routes(
     session_maker,
     user_payload: dict[str, str],
 ):
-    auth = await build_auth_context(client, session_maker, user_payload)
+    auth = await register_verified_user(client, session_maker, user_payload)
 
     tag_response = await client.post(
         '/api/v1/tags/',
-        headers=auth['headers'],
+        headers=auth.headers,
         json={
             'name': 'blocked',
             'color': '#FFFFFF',
@@ -98,8 +98,8 @@ async def test_public_user_cannot_access_admin_routes(
     assert tag_response.status_code == status.HTTP_403_FORBIDDEN
 
     role_response = await client.post(
-        f'/api/v1/users/{auth["user"].id}/roles/{settings.rbac.admin_role}',
-        headers=auth['headers'],
+        f'/api/v1/users/{auth.user.id}/roles/{settings.rbac.admin_role}',
+        headers=auth.headers,
     )
     assert role_response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -126,7 +126,7 @@ async def test_missing_resources_return_expected_404(
         response = await client.request(
             method,
             url,
-            headers=admin_auth['headers'],
+            headers=admin_auth.headers,
             json=json,
         )
 
@@ -138,18 +138,18 @@ async def test_invalid_payloads_return_validation_errors(
     session_maker,
     user_payload: dict[str, str],
 ):
-    auth = await build_auth_context(client, session_maker, user_payload)
+    auth = await register_verified_user(client, session_maker, user_payload)
 
     project_response = await client.post(
         '/api/v1/projects/',
-        headers=auth['headers'],
+        headers=auth.headers,
         json={'title': 'missing required roles shape', 'required_roles': 'backend'},
     )
     assert project_response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     room_response = await client.post(
         '/api/v1/rooms/join',
-        headers=auth['headers'],
+        headers=auth.headers,
         json={'wrong_field': 'ABC123'},
     )
     assert room_response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT

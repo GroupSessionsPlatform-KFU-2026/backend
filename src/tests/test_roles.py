@@ -17,7 +17,7 @@ async def test_public_access_token_can_read_own_profile(
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()['id'] == str(public_auth['user'].id)
+    assert response.json()['id'] == str(public_auth.user.id)
 
 
 async def test_public_access_token_has_public_scopes(
@@ -36,7 +36,7 @@ async def test_admin_access_token_can_assign_roles(
     public_auth,
 ):
     response = await async_client.post(
-        f'/api/v1/users/{public_auth["user"].id}/roles/{settings.rbac.admin_role}',
+        f'/api/v1/users/{public_auth.user.id}/roles/{settings.rbac.admin_role}',
         headers=admin_headers,
     )
 
@@ -60,7 +60,7 @@ async def test_public_access_token_cannot_assign_roles(
     public_auth,
 ):
     response = await async_client.post(
-        f'/api/v1/users/{public_auth["user"].id}/roles/{settings.rbac.admin_role}',
+        f'/api/v1/users/{public_auth.user.id}/roles/{settings.rbac.admin_role}',
         headers=public_headers,
     )
 

@@ -1,143 +1,107 @@
-from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import pytest
 from src.app.models.pomodoro_session import PomodoroPhase, PomodoroSession
+from src.app.models.project import Project
 from src.app.models.room import Room, RoomStatus
-from src.app.sockets.events import pomodoro
+from src.app.models.user import User
+from src.app.sockets.events import contexts, pomodoro
 from src.app.sockets.manager import SocketConnectionManager
+from src.app.utils.repository import Repository
+from src.tests.socket_harness import RecordingSocketServer
 
 UPDATED_WORK_DURATION = 30
+SOCKET_SID = 'sid-1'
 
 
-class FakeSocketServer:
-    def __init__(self) -> None:
-        self.sessions: dict[str, dict] = {}
-        self.handlers: dict[str, object] = {}
-        self.emitted: list[dict] = []
+async def create_pomodoro_socket_state(session_maker):
+    async with session_maker() as session:
+        user_id = uuid4().hex
+        user = await Repository[User](session).save(
+            User(
+                email=f'pomodoro-socket-{user_id}@example.com',
+                username=f'pomodoro-socket-{user_id}',
+                avatar_url=None,
+                password_hash='hash',
+                is_active=True,
+                is_verified=True,
+            )
+        )
+        project = await Repository[Project](session).save(
+            Project(
+                title='Socket pomodoro project',
+                description='Project for pomodoro socket tests',
+                required_roles=[],
+                owner_id=user.id,
+                is_archived=False,
+            )
+        )
+        room = await Repository[Room](session).save(
+            Room(
+                title='Socket pomodoro room',
+                max_participants=5,
+                project_id=project.id,
+                creator_id=user.id,
+                room_code=f'{uuid4().hex[:6].upper()}',
+                status=RoomStatus.ACTIVE,
+                ended_at=None,
+            )
+        )
+        pomodoro_session = await Repository[PomodoroSession](session).save(
+            PomodoroSession(
+                room_id=room.id,
+                work_duration=25,
+                short_break_duration=5,
+                long_break_duration=15,
+                cycles_before_long=4,
+                current_phase=PomodoroPhase.WORK,
+                completed_cycles=0,
+                phase_ends_at=None,
+                session_ends_at=None,
+                is_running=False,
+            )
+        )
 
-    def on(self, event_name: str):
-        def decorator(callback):
-            self.handlers[event_name] = callback
-            return callback
-
-        return decorator
-
-    async def save_session(self, sid: str, data: dict) -> None:
-        self.sessions[sid] = data
-
-    async def get_session(self, sid: str) -> dict:
-        return self.sessions.get(sid, {})
-
-    async def emit(self, **kwargs) -> None:
-        self.emitted.append(kwargs)
-
-
-class FakeRoomRepository:
-    def __init__(self, room: Room | None) -> None:
-        self.room = room
-
-    async def get(self, _room_id):
-        return self.room
-
-
-class FakePomodoroService:
-    def __init__(self, session: PomodoroSession | None) -> None:
-        self.session = session
-
-    async def get_room_pomodoro(self, _room_id):
-        return self.session
-
-    async def update_room_pomodoro(self, room_id, pomodoro_update):
-        _ = room_id
-        if self.session is None:
-            return None
-
-        for key, value in pomodoro_update.model_dump(exclude_unset=True).items():
-            setattr(self.session, key, value)
-        return self.session
-
-    async def start_pomodoro(self, _room_id):
-        if self.session is None:
-            return None
-
-        self.session.is_running = True
-        return self.session
-
-    async def pause_pomodoro(self, _room_id):
-        if self.session is None:
-            return None
-
-        self.session.is_running = False
-        return self.session
-
-    async def reset_pomodoro(self, _room_id):
-        if self.session is None:
-            return None
-
-        self.session.current_phase = PomodoroPhase.WORK
-        self.session.completed_cycles = 0
-        self.session.is_running = False
-        return self.session
+    return user, room, pomodoro_session
 
 
-async def test_pomodoro_socket_events_handle_full_timer_flow(monkeypatch):
-    fake_sio = FakeSocketServer()
-    manager = SocketConnectionManager(fake_sio)
-    room_id = uuid4()
-    user_id = uuid4()
-    room = Room(
-        id=room_id,
-        title='Socket pomodoro room',
-        max_participants=5,
-        project_id=uuid4(),
-        creator_id=user_id,
-        room_code='ABC123',
-        status=RoomStatus.ACTIVE,
-        ended_at=None,
-    )
-    session = PomodoroSession(
-        room_id=room_id,
-        work_duration=25,
-        short_break_duration=5,
-        long_break_duration=15,
-        cycles_before_long=4,
-        current_phase=PomodoroPhase.WORK,
-        completed_cycles=0,
-        phase_ends_at=None,
-        session_ends_at=None,
-        is_running=False,
-    )
-    service = FakePomodoroService(session)
-
-    @asynccontextmanager
-    async def pomodoro_context():
-        yield FakeRoomRepository(room), service
-
-    monkeypatch.setattr(
-        pomodoro.socket_service_factory,
-        'pomodoro',
-        pomodoro_context,
-    )
+async def create_pomodoro_harness(
+    session_maker,
+    role: str,
+) -> tuple[RecordingSocketServer, SocketConnectionManager, Room, PomodoroSession]:
+    user, room, pomodoro_session = await create_pomodoro_socket_state(session_maker)
+    socket_server = RecordingSocketServer()
+    manager = SocketConnectionManager(socket_server)
     await manager.save_socket_session(
-        'sid-1',
+        SOCKET_SID,
         {
-            'user_id': str(user_id),
-            'room_id': str(room_id),
-            'role': 'owner',
+            'user_id': str(user.id),
+            'room_id': str(room.id),
+            'role': role,
             'scopes': ['pomodoro:read', 'pomodoro:write'],
         },
     )
+    pomodoro.PomodoroSocketEventHandler(manager).register(socket_server)
+    return socket_server, manager, room, pomodoro_session
 
-    handler = pomodoro.PomodoroSocketEventHandler(manager)
-    handler.register(fake_sio)
 
-    state_response = await fake_sio.handlers['pomodoro.state.get']('sid-1')
+async def test_pomodoro_socket_events_handle_full_timer_flow(
+    monkeypatch,
+    session_maker,
+):
+    monkeypatch.setattr(contexts, 'async_session_maker', session_maker)
+    socket_server, _, room, pomodoro_session = await create_pomodoro_harness(
+        session_maker,
+        role='owner',
+    )
+    handlers = socket_server.handlers['/']
+
+    state_response = await handlers['pomodoro.state.get'](SOCKET_SID)
     assert state_response['ok'] is True
-    assert state_response['state']['room_id'] == str(room_id)
+    assert state_response['state']['room_id'] == str(room.id)
 
-    settings_response = await fake_sio.handlers['pomodoro.settings.update'](
-        'sid-1',
+    settings_response = await handlers['pomodoro.settings.update'](
+        SOCKET_SID,
         {
             'work_duration': UPDATED_WORK_DURATION,
             'short_break_duration': 10,
@@ -148,22 +112,27 @@ async def test_pomodoro_socket_events_handle_full_timer_flow(monkeypatch):
     assert settings_response['ok'] is True
     assert settings_response['state']['work_duration'] == UPDATED_WORK_DURATION
 
-    start_response = await fake_sio.handlers['pomodoro.start']('sid-1')
+    start_response = await handlers['pomodoro.start'](SOCKET_SID)
     assert start_response['ok'] is True
     assert start_response['state']['is_running'] is True
 
-    pause_response = await fake_sio.handlers['pomodoro.pause']('sid-1')
+    pause_response = await handlers['pomodoro.pause'](SOCKET_SID)
     assert pause_response['ok'] is True
     assert pause_response['state']['is_running'] is False
 
-    session.current_phase = PomodoroPhase.LONG_BREAK
-    session.completed_cycles = 2
-    reset_response = await fake_sio.handlers['pomodoro.reset']('sid-1')
+    async with session_maker() as session:
+        repository = Repository[PomodoroSession](session)
+        stored_session = await repository.get(pomodoro_session.id)
+        stored_session.current_phase = PomodoroPhase.LONG_BREAK
+        stored_session.completed_cycles = 2
+        await repository.save(stored_session)
+
+    reset_response = await handlers['pomodoro.reset'](SOCKET_SID)
     assert reset_response['ok'] is True
     assert reset_response['state']['current_phase'] == PomodoroPhase.WORK
     assert reset_response['state']['completed_cycles'] == 0
 
-    emitted_events = [event['event'] for event in fake_sio.emitted]
+    emitted_events = [event['event'] for event in socket_server.emitted]
     assert emitted_events == [
         'pomodoro.state.updated',
         'pomodoro.state.updated',
@@ -174,58 +143,17 @@ async def test_pomodoro_socket_events_handle_full_timer_flow(monkeypatch):
 
 async def test_pomodoro_socket_events_return_errors_for_invalid_payloads(
     monkeypatch,
+    session_maker,
 ):
-    fake_sio = FakeSocketServer()
-    manager = SocketConnectionManager(fake_sio)
-    room_id = uuid4()
-    user_id = uuid4()
-    room = Room(
-        id=room_id,
-        title='Socket pomodoro room',
-        max_participants=5,
-        project_id=uuid4(),
-        creator_id=user_id,
-        room_code='ABC123',
-        status=RoomStatus.ACTIVE,
-        ended_at=None,
+    monkeypatch.setattr(contexts, 'async_session_maker', session_maker)
+    socket_server, _, _, _ = await create_pomodoro_harness(
+        session_maker,
+        role='participant',
     )
-    session = PomodoroSession(
-        room_id=room_id,
-        work_duration=25,
-        short_break_duration=5,
-        long_break_duration=15,
-        cycles_before_long=4,
-        current_phase=PomodoroPhase.WORK,
-        completed_cycles=0,
-        phase_ends_at=None,
-        session_ends_at=None,
-        is_running=False,
-    )
+    handlers = socket_server.handlers['/']
 
-    @asynccontextmanager
-    async def pomodoro_context():
-        yield FakeRoomRepository(room), FakePomodoroService(session)
-
-    monkeypatch.setattr(
-        pomodoro.socket_service_factory,
-        'pomodoro',
-        pomodoro_context,
-    )
-    await manager.save_socket_session(
-        'sid-1',
-        {
-            'user_id': str(user_id),
-            'room_id': str(room_id),
-            'role': 'participant',
-            'scopes': ['pomodoro:read', 'pomodoro:write'],
-        },
-    )
-
-    handler = pomodoro.PomodoroSocketEventHandler(manager)
-    handler.register(fake_sio)
-
-    invalid_payload_response = await fake_sio.handlers['pomodoro.settings.update'](
-        'sid-1',
+    invalid_payload_response = await handlers['pomodoro.settings.update'](
+        SOCKET_SID,
         {'work_duration': 0},
     )
     assert invalid_payload_response == {

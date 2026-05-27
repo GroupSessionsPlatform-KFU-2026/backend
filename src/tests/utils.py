@@ -1,39 +1,59 @@
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID
 
 from fastapi import status
 from httpx import AsyncClient
-from sqlmodel import select
 from src.app.models.email import EmailAction, EmailNotification
 from src.app.models.user import User
+from src.app.services.users import UserService
+from src.app.utils.repository import Repository
+from src.app.utils.user_repository import UserRepository
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
+
+
+@dataclass(slots=True)
+class AuthContext:
+    user: User
+    payload: dict[str, str]
+    tokens: dict
+    headers: dict[str, str]
+    scopes: set[str] = field(default_factory=set)
 
 
 def read_data(file_name: str) -> dict:
     return json.loads((TEST_DATA_DIR / file_name).read_text(encoding='utf-8'))
 
 
-async def read_user_by_email(session_maker, email: str) -> User:
+async def get_user_by_email(session_maker, email: str) -> User:
     async with session_maker() as session:
-        result = await session.exec(select(User).where(User.email == email))
-        return result.one()
+        user_service = UserService(UserRepository(session))
+        user = await user_service.get_user_by_email(email)
+        if user is None:
+            raise AssertionError(f'User with email {email} was not found')
+        return user
 
 
-async def read_email_notification(
+async def get_email_notification(
     session_maker,
     user_id: UUID,
     action: EmailAction = EmailAction.VERIFY_ACCOUNT,
 ) -> EmailNotification:
     async with session_maker() as session:
-        result = await session.exec(
-            select(EmailNotification).where(
-                EmailNotification.user_id == user_id,
-                EmailNotification.action == action,
-            )
+        repository = Repository[EmailNotification](session)
+        notification = await repository.get_one_by_filters(
+            extra_filters={
+                'user_id': user_id,
+                'action': action,
+            },
         )
-        return result.one()
+        if notification is None:
+            raise AssertionError(
+                f'Email notification {action} for user {user_id} was not found'
+            )
+        return notification
 
 
 async def register_user(client: AsyncClient, user_payload: dict[str, str]):
@@ -45,8 +65,8 @@ async def verify_user(
     session_maker,
     user_payload: dict[str, str],
 ) -> User:
-    user = await read_user_by_email(session_maker, user_payload['email'])
-    notification = await read_email_notification(session_maker, user.id)
+    user = await get_user_by_email(session_maker, user_payload['email'])
+    notification = await get_email_notification(session_maker, user.id)
 
     response = await client.get(
         f'/api/v1/auth/user/{user.id}/verify',
@@ -67,11 +87,11 @@ async def login_user(client: AsyncClient, user_payload: dict[str, str]):
     )
 
 
-async def build_auth_context(
+async def register_verified_user(
     client: AsyncClient,
     session_maker,
     user_payload: dict[str, str],
-) -> dict:
+) -> AuthContext:
     register_response = await register_user(client, user_payload)
     assert register_response.status_code == status.HTTP_201_CREATED
 
@@ -80,9 +100,9 @@ async def build_auth_context(
     assert login_response.status_code == status.HTTP_200_OK
 
     token_data = login_response.json()
-    return {
-        'user': user,
-        'payload': user_payload,
-        'tokens': token_data,
-        'headers': {'Authorization': f'Bearer {token_data["access_token"]}'},
-    }
+    return AuthContext(
+        user=user,
+        payload=user_payload,
+        tokens=token_data,
+        headers={'Authorization': f'Bearer {token_data["access_token"]}'},
+    )

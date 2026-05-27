@@ -2,9 +2,7 @@ from uuid import uuid4
 
 from fastapi import status
 from httpx import AsyncClient
-from src.tests.utils import build_auth_context, read_data
-
-MAX_ONE_PARTICIPANT = 1
+from src.tests.utils import read_data, register_verified_user
 
 
 async def create_project(client: AsyncClient, headers: dict[str, str]) -> dict:
@@ -43,45 +41,49 @@ async def test_project_and_tag_error_cases(
     second_user_payload: dict[str, str],
     admin_auth,
 ):
-    owner = await build_auth_context(client, session_maker, user_payload)
-    other_user = await build_auth_context(client, session_maker, second_user_payload)
-    project = await create_project(client, owner['headers'])
+    owner_auth = await register_verified_user(client, session_maker, user_payload)
+    other_user_auth = await register_verified_user(
+        client,
+        session_maker,
+        second_user_payload,
+    )
+    project = await create_project(client, owner_auth.headers)
     missing_id = uuid4()
 
     owner_hidden_response = await client.get(
         f'/api/v1/projects/{project["id"]}',
-        headers=other_user['headers'],
+        headers=other_user_auth.headers,
     )
     assert owner_hidden_response.status_code == status.HTTP_404_NOT_FOUND
 
     update_hidden_response = await client.put(
         f'/api/v1/projects/{project["id"]}',
-        headers=other_user['headers'],
+        headers=other_user_auth.headers,
         json={'title': 'Forbidden update'},
     )
     assert update_hidden_response.status_code == status.HTTP_404_NOT_FOUND
 
     archive_hidden_response = await client.delete(
         f'/api/v1/projects/{project["id"]}',
-        headers=other_user['headers'],
+        headers=other_user_auth.headers,
     )
     assert archive_hidden_response.status_code == status.HTTP_404_NOT_FOUND
 
     missing_project_response = await client.get(
         f'/api/v1/projects/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert missing_project_response.status_code == status.HTTP_404_NOT_FOUND
 
     assign_missing_tag_response = await client.post(
         f'/api/v1/projects/{project["id"]}/tags/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert assign_missing_tag_response.status_code == status.HTTP_404_NOT_FOUND
 
     tag_response = await client.post(
         '/api/v1/tags/',
-        headers=admin_auth['headers'],
+        headers=admin_auth.headers,
         json={
             'name': 'error-case',
             'color': '#112233',
@@ -93,13 +95,13 @@ async def test_project_and_tag_error_cases(
 
     remove_missing_relation_response = await client.delete(
         f'/api/v1/projects/{project["id"]}/tags/{tag["id"]}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert remove_missing_relation_response.status_code == status.HTTP_404_NOT_FOUND
 
     other_project_tags_response = await client.get(
         f'/api/v1/projects/{project["id"]}/tags',
-        headers=other_user['headers'],
+        headers=other_user_auth.headers,
     )
     assert other_project_tags_response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -110,9 +112,13 @@ async def test_room_lifecycle_error_cases(
     user_payload: dict[str, str],
     second_user_payload: dict[str, str],
 ):
-    owner = await build_auth_context(client, session_maker, user_payload)
-    participant = await build_auth_context(client, session_maker, second_user_payload)
-    overflow_user = await build_auth_context(
+    owner_auth = await register_verified_user(client, session_maker, user_payload)
+    participant_auth = await register_verified_user(
+        client,
+        session_maker,
+        second_user_payload,
+    )
+    overflow_auth = await register_verified_user(
         client,
         session_maker,
         {
@@ -121,31 +127,31 @@ async def test_room_lifecycle_error_cases(
             'password': 'test-password-123',
         },
     )
-    project = await create_project(client, owner['headers'])
+    project = await create_project(client, owner_auth.headers)
     room = await create_room(
         client,
-        owner['headers'],
+        owner_auth.headers,
         project['id'],
-        max_participants=MAX_ONE_PARTICIPANT,
+        max_participants=1,
     )
 
     missing_join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'room_code': 'MISSING'},
     )
     assert missing_join_response.status_code == status.HTTP_404_NOT_FOUND
 
     first_join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert first_join_response.status_code == status.HTTP_200_OK
 
     duplicate_join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert duplicate_join_response.status_code == status.HTTP_200_OK
@@ -153,46 +159,46 @@ async def test_room_lifecycle_error_cases(
 
     overflow_join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=overflow_user['headers'],
+        headers=overflow_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert overflow_join_response.status_code == status.HTTP_409_CONFLICT
 
     participant_update_room_response = await client.put(
         f'/api/v1/rooms/{room["id"]}',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'title': 'Forbidden room update', 'max_participants': 2},
     )
     assert participant_update_room_response.status_code == status.HTTP_403_FORBIDDEN
 
     participant_end_room_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
     )
     assert participant_end_room_response.status_code == status.HTTP_403_FORBIDDEN
 
     end_room_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert end_room_response.status_code == status.HTTP_200_OK
 
     update_ended_room_response = await client.put(
         f'/api/v1/rooms/{room["id"]}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'title': 'Ended room update', 'max_participants': 2},
     )
     assert update_ended_room_response.status_code == status.HTTP_409_CONFLICT
 
     end_ended_room_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert end_ended_room_response.status_code == status.HTTP_409_CONFLICT
 
     join_ended_room_response = await client.post(
         '/api/v1/rooms/join',
-        headers=overflow_user['headers'],
+        headers=overflow_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert join_ended_room_response.status_code == status.HTTP_409_CONFLICT
@@ -204,22 +210,26 @@ async def test_chat_board_and_comment_error_cases(
     user_payload: dict[str, str],
     second_user_payload: dict[str, str],
 ):
-    owner = await build_auth_context(client, session_maker, user_payload)
-    participant = await build_auth_context(client, session_maker, second_user_payload)
-    project = await create_project(client, owner['headers'])
-    room = await create_room(client, owner['headers'], project['id'])
+    owner_auth = await register_verified_user(client, session_maker, user_payload)
+    participant_auth = await register_verified_user(
+        client,
+        session_maker,
+        second_user_payload,
+    )
+    project = await create_project(client, owner_auth.headers)
+    room = await create_room(client, owner_auth.headers, project['id'])
     missing_id = uuid4()
 
     join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert join_response.status_code == status.HTTP_200_OK
 
     message_response = await client.post(
         f'/api/v1/rooms/{room["id"]}/messages/',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'content': 'Owner message'},
     )
     assert message_response.status_code == status.HTTP_200_OK
@@ -227,20 +237,20 @@ async def test_chat_board_and_comment_error_cases(
 
     participant_message_update_response = await client.put(
         f'/api/v1/rooms/{room["id"]}/messages/{message["id"]}',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'content': 'Forbidden edit'},
     )
     assert participant_message_update_response.status_code == status.HTTP_403_FORBIDDEN
 
     missing_message_delete_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}/messages/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert missing_message_delete_response.status_code == status.HTTP_404_NOT_FOUND
 
     element_response = await client.post(
         f'/api/v1/rooms/{room["id"]}/board-elements/',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={
             'element_type': 'text',
             'data': {'text': 'Owner note'},
@@ -252,7 +262,7 @@ async def test_chat_board_and_comment_error_cases(
 
     participant_board_update_response = await client.put(
         f'/api/v1/rooms/{room["id"]}/board-elements/{element["id"]}',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={
             'element_type': 'text',
             'data': {'text': 'Forbidden note update'},
@@ -263,13 +273,13 @@ async def test_chat_board_and_comment_error_cases(
 
     participant_clear_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}/board-elements/',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
     )
     assert participant_clear_response.status_code == status.HTTP_403_FORBIDDEN
 
     missing_element_update_response = await client.put(
         f'/api/v1/rooms/{room["id"]}/board-elements/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={
             'element_type': 'text',
             'data': {'text': 'Missing element'},
@@ -280,7 +290,7 @@ async def test_chat_board_and_comment_error_cases(
 
     comment_response = await client.post(
         f'/api/v1/rooms/{room["id"]}/board-elements/{element["id"]}/comments/',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'content': 'Owner comment', 'is_anonymous': False},
     )
     assert comment_response.status_code == status.HTTP_200_OK
@@ -291,7 +301,7 @@ async def test_chat_board_and_comment_error_cases(
             f'/api/v1/rooms/{room["id"]}/board-elements/{element["id"]}'
             f'/comments/{comment["id"]}'
         ),
-        headers=participant['headers'],
+        headers=participant_auth.headers,
     )
     assert participant_comment_delete_response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -300,14 +310,14 @@ async def test_chat_board_and_comment_error_cases(
             f'/api/v1/rooms/{room["id"]}/board-elements/{element["id"]}'
             f'/comments/{missing_id}'
         ),
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'content': 'Missing comment', 'is_anonymous': False},
     )
     assert missing_comment_update_response.status_code == status.HTTP_404_NOT_FOUND
 
     missing_element_comment_response = await client.post(
         f'/api/v1/rooms/{room["id"]}/board-elements/{missing_id}/comments/',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'content': 'Missing element comment', 'is_anonymous': False},
     )
     assert missing_element_comment_response.status_code == status.HTTP_404_NOT_FOUND
@@ -319,42 +329,46 @@ async def test_participant_and_pomodoro_error_cases(
     user_payload: dict[str, str],
     second_user_payload: dict[str, str],
 ):
-    owner = await build_auth_context(client, session_maker, user_payload)
-    participant = await build_auth_context(client, session_maker, second_user_payload)
-    project = await create_project(client, owner['headers'])
-    room = await create_room(client, owner['headers'], project['id'])
+    owner_auth = await register_verified_user(client, session_maker, user_payload)
+    participant_auth = await register_verified_user(
+        client,
+        session_maker,
+        second_user_payload,
+    )
+    project = await create_project(client, owner_auth.headers)
+    room = await create_room(client, owner_auth.headers, project['id'])
     missing_id = uuid4()
 
     join_response = await client.post(
         '/api/v1/rooms/join',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={'room_code': room['room_code']},
     )
     assert join_response.status_code == status.HTTP_200_OK
 
     participant_update_response = await client.patch(
-        f'/api/v1/rooms/{room["id"]}/participants/{participant["user"].id}',
-        headers=participant['headers'],
+        f'/api/v1/rooms/{room["id"]}/participants/{participant_auth.user.id}',
+        headers=participant_auth.headers,
         json={'role': 'moderator'},
     )
     assert participant_update_response.status_code == status.HTTP_403_FORBIDDEN
 
     missing_participant_update_response = await client.patch(
         f'/api/v1/rooms/{room["id"]}/participants/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
         json={'role': 'moderator'},
     )
     assert missing_participant_update_response.status_code == status.HTTP_404_NOT_FOUND
 
     missing_participant_remove_response = await client.delete(
         f'/api/v1/rooms/{room["id"]}/participants/{missing_id}',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert missing_participant_remove_response.status_code == status.HTTP_404_NOT_FOUND
 
     participant_pomodoro_update_response = await client.patch(
         f'/api/v1/rooms/{room["id"]}/pomodoro/settings',
-        headers=participant['headers'],
+        headers=participant_auth.headers,
         json={
             'work_duration': 25,
             'short_break_duration': 5,
@@ -366,6 +380,6 @@ async def test_participant_and_pomodoro_error_cases(
 
     missing_room_pomodoro_response = await client.get(
         f'/api/v1/rooms/{missing_id}/pomodoro/',
-        headers=owner['headers'],
+        headers=owner_auth.headers,
     )
     assert missing_room_pomodoro_response.status_code == status.HTTP_404_NOT_FOUND

@@ -42,21 +42,21 @@ jobs:
         env:
           ENV: ${{ secrets.ENV }}
         run: |
-          cd src
-
           echo "Create DB"
-          touch db.sqlite3
-          chmod 777 db.sqlite3
+          touch src/db.sqlite3
+          chmod 777 src/db.sqlite3
 
           echo "Create .env"
           if [ -n "$ENV" ]; then
             echo "$ENV" > .env
+            echo "$ENV" > src/.env
           else
-            cp .env.example .env
+            cp src/.env.example .env
+            cp src/.env.example src/.env
           fi
 
           echo "Init DB"
-          PYTHONPATH=.. uv run python test_db_init.py
+          uv --project src run python -m src.test_db_init src/db.sqlite3
 
       - name: Run lint
         run: |
