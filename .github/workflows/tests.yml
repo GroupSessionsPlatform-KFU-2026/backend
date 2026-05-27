@@ -1,0 +1,79 @@
+name: Run tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: src/uv.lock
+
+      - name: Install dependencies
+        run: |
+          cd src
+          echo "Install deps"
+          uv sync --dev --locked
+
+      - name: Prepare DB
+        env:
+          ENV: ${{ secrets.ENV }}
+        run: |
+          cd src
+
+          echo "Create DB"
+          touch db.sqlite3
+          chmod 777 db.sqlite3
+
+          echo "Create .env"
+          if [ -n "$ENV" ]; then
+            echo "$ENV" > .env
+          else
+            cp .env.example .env
+          fi
+
+          echo "Init DB"
+          PYTHONPATH=.. uv run python test_db_init.py
+
+      - name: Run lint
+        run: |
+          cd src
+          echo "Run lint"
+          uv run ruff check tests app test_db_init.py init.py pyproject.toml
+
+      - name: Run tests
+        run: |
+          cd src
+          uv run -m pytest \
+            --junitxml=pytest.xml \
+            --cov-report=term-missing \
+            --cov=app tests/ | tee pytest-coverage.txt
+
+      - name: Coverage comment
+        uses: MishaKav/pytest-coverage-comment@v1
+        with:
+          pytest-coverage-path: ./src/pytest-coverage.txt
+          junitxml-path: ./src/pytest.xml

@@ -15,4 +15,11 @@ def form_db_url() -> str:
     ).render_as_string(hide_password=False)
 
 
+def form_test_db_url(db_path: str) -> str:
+    return URL.create(
+        drivername='sqlite+aiosqlite',
+        database=db_path,
+    ).render_as_string(hide_password=False)
+
+
 engine = create_async_engine(form_db_url())

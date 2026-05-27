@@ -3,10 +3,11 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import BaseModel
+from .types import json_type
 
 if TYPE_CHECKING:
     from .project_tag import ProjectTag
@@ -23,7 +24,7 @@ class ProjectBase(SQLModel):
     )
     required_roles: list[str] = Field(
         default_factory=list,
-        sa_column=Column(JSONB, nullable=False),
+        sa_column=Column(json_type(), nullable=False),
     )
 
 
