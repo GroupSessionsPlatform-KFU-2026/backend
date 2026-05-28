@@ -3,11 +3,11 @@ from uuid import UUID
 
 from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
 from ..schemas.board_elements_filters import BoardElementType
 from .base import BaseModel
+from .types import json_type
 
 if TYPE_CHECKING:
     from .board_element_comment import BoardElementComment
@@ -26,7 +26,7 @@ class BoardElementBase(SQLModel):
             nullable=False,
         )
     )
-    data: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
+    data: dict[str, Any] = Field(sa_column=Column(json_type(), nullable=False))
     is_anonymous: bool = Field(default=False, nullable=False)
 
 
